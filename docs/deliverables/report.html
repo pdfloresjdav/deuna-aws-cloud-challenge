@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Deuna! — AWS Cloud Engineering Assessment</title>
+<style>
+  :root{
+    --navy:#1f4e79; --charcoal:#1a2733; --teal:#2f8f8a; --blue:#2f6f8f;
+    --ink:#1a2733; --muted:#5b6b7a; --line:#d7e0ea; --panel:#f3f7fb; --panel2:#eef4fb;
+    --accentbar:#2f6f8f;
+  }
+  *{box-sizing:border-box;}
+  html{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;color:var(--ink);font-size:11pt;line-height:1.5;}
+  body{margin:0;}
+  h1,h2,h3,h4{color:var(--navy);line-height:1.2;font-weight:700;}
+  h1{font-size:20pt;margin:0 0 6pt;}
+  h2{font-size:15pt;margin:20pt 0 6pt;padding-bottom:3pt;border-bottom:2px solid var(--navy);}
+  h3{font-size:12.5pt;margin:13pt 0 4pt;color:var(--blue);}
+  h4{font-size:11pt;margin:10pt 0 3pt;color:var(--charcoal);}
+  p{margin:5pt 0;}
+  a{color:var(--blue);text-decoration:none;}
+  code,pre{font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace;font-size:8.6pt;}
+  code{background:var(--panel2);padding:0.5pt 3pt;border-radius:3px;color:#17313f;}
+  pre{background:#0f2231;color:#e7eef5;padding:9pt 11pt;border-radius:6px;overflow:auto;line-height:1.4;
+      white-space:pre-wrap;word-break:break-word;border:1px solid #0b1a26;}
+  pre code{background:none;color:inherit;padding:0;}
+  table{border-collapse:collapse;width:100%;margin:7pt 0;font-size:8.8pt;}
+  th,td{border:1px solid var(--line);padding:4pt 6pt;text-align:left;vertical-align:top;}
+  th{background:var(--panel2);color:var(--navy);font-weight:700;}
+  tr:nth-child(even) td{background:#f8fbfe;}
+  .muted{color:var(--muted);}
+  .small{font-size:8.6pt;}
+  .page{page-break-before:always;}
+  .nobreak{page-break-inside:avoid;}
+  figure{margin:9pt 0;page-break-inside:avoid;text-align:center;}
+  figure img{max-width:100%;max-height:220mm;border:1px solid var(--line);border-radius:6px;background:#fff;padding:5pt;}
+  figcaption{font-size:8.4pt;color:var(--muted);margin-top:4pt;font-style:italic;}
+  .callout{background:var(--panel);border-left:4px solid var(--teal);padding:7pt 11pt;margin:8pt 0;border-radius:0 6px 6px 0;}
+  .warn{background:#fff6f2;border-left:4px solid #c0603a;padding:7pt 11pt;margin:8pt 0;border-radius:0 6px 6px 0;}
+  .kpis{display:flex;gap:8pt;flex-wrap:wrap;margin:8pt 0;}
+  .kpi{flex:1 1 120pt;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:7pt 9pt;}
+  .kpi .v{font-size:15pt;font-weight:700;color:var(--navy);}
+  .kpi .l{font-size:8pt;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;}
+  .tag{display:inline-block;font-size:7.6pt;font-weight:700;padding:1pt 6pt;border-radius:10px;background:var(--panel2);color:var(--blue);border:1px solid var(--line);}
+  /* Cover */
+  .cover{height:252mm;display:flex;flex-direction:column;justify-content:center;}
+  .cover .rule{height:5px;width:90px;background:var(--teal);margin:14pt 0;}
+  .cover h1{font-size:30pt;color:var(--navy);margin:0;}
+  .cover .sub{font-size:14pt;color:var(--charcoal);margin-top:6pt;}
+  .cover .meta{margin-top:26pt;font-size:10pt;color:var(--muted);}
+  .cover .meta b{color:var(--charcoal);}
+  .toc ol{margin:0;padding-left:18pt;}
+  .toc li{margin:3pt 0;}
+  .legend{display:flex;gap:10pt;flex-wrap:wrap;font-size:8.4pt;margin:6pt 0;}
+  .legend span{display:inline-flex;align-items:center;gap:4pt;}
+  .sw{width:10pt;height:10pt;border-radius:2px;display:inline-block;}
+</style>
+</head>
+<body>
+
+<!-- ===================== COVER ===================== -->
+<section class="cover">
+  <div class="tag">Informe técnico de evaluación · v1.0 · 2026-11-24</div>
+  <div class="rule"></div>
+  <h1>AWS Cloud Engineering Assessment</h1>
+  <div class="sub">Deuna! — Plataforma fintech de alto volumen sobre AWS</div>
+  <div class="rule"></div>
+  <p class="small" style="max-width:150mm;">Entrega consolidada de las cuatro tareas: monitorización de escalado de
+  microservicios ECS, asignación de coste por transacción, Infraestructura como Código con Terraform, y gestión de
+  un incidente de producción. Incluye implementación IaC validada estáticamente y documentación de diseño.</div>
+  <div class="meta">
+    <p><b>Preparado por:</b> ⟨nombre del candidato — configurable⟩ · Rol: Senior AWS Cloud Infrastructure Engineer</p>
+    <p><b>Alcance de la entrega:</b> Tarea 3 implementada (IaC); Tareas 1, 2 y 4 diseñadas y documentadas.</p>
+    <p><b>Estado de despliegue:</b> ningún recurso AWS desplegado o modificado. Ejemplos numéricos sintéticos.</p>
+    <p class="small">Este documento no imita la marca de Deuna! ni implica su respaldo. Región <code>us-east-1</code> e
+    identificadores son ejemplos/placeholders.</p>
+  </div>
+</section>
+
+<!-- ===================== TOC ===================== -->
+<section class="page toc">
+  <h2>Tabla de contenidos</h2>
+  <ol>
+    <li><a href="#resumen">Resumen ejecutivo</a></li>
+    <li><a href="#contexto">Contexto de negocio y supuestos</a></li>
+    <li><a href="#principios">Arquitectura y principios de seguridad</a></li>
+    <li><a href="#t1">Tarea 1 — Monitorización de escalado ECS</a></li>
+    <li><a href="#t2">Tarea 2 — Asignación de coste por transacción</a></li>
+    <li><a href="#t3">Tarea 3 — Implementación Terraform</a></li>
+    <li><a href="#t4">Tarea 4 — Gestión de incidente de producción</a></li>
+    <li><a href="#seguridad">Consideraciones transversales de seguridad</a></li>
+    <li><a href="#coste">Decisiones de eficiencia de coste</a></li>
+    <li><a href="#validacion">Validación y reproducibilidad</a></li>
+    <li><a href="#trazabilidad">Trazabilidad de requisitos</a></li>
+    <li><a href="#limitaciones">Supuestos y limitaciones</a></li>
+    <li><a href="#produccion">Recomendaciones para producción</a></li>
+    <li><a href="#conclusiones">Conclusiones</a></li>
+    <li><a href="#referencias">Referencias oficiales</a></li>
+  </ol>
+  <p class="small muted">Nota sobre estados de cobertura: <b>IMPL</b> = implementado y validado estáticamente ·
+  <b>DIS</b> = diseñado y documentado · <b>EJ</b> = ejemplo ilustrativo · <b>AWS?</b> = requiere entorno AWS autorizado
+  para verificación en runtime.</p>
+</section>
+
+<!-- ===================== 1. RESUMEN ===================== -->
+<section class="page" id="resumen">
+  <h2>1. Resumen ejecutivo</h2>
+  <p>Deuna! procesa transacciones <b>monetarias</b> (pagos, transferencias, retiros, recargas) y <b>no monetarias</b>
+  (onboarding, actualización de perfil, consulta de saldo) sobre una arquitectura de microservicios en AWS (ECS,
+  Aurora PostgreSQL, S3, Lambda, API Gateway, SQS) con una plataforma de observabilidad externa que ingiere
+  CloudWatch Logs. Esta entrega cubre las cuatro tareas del assessment.</p>
+  <div class="kpis">
+    <div class="kpi"><div class="v">4/4</div><div class="l">Tareas cubiertas</div></div>
+    <div class="kpi"><div class="v">138 / 0 / 24</div><div class="l">Checkov pass/fail/skip</div></div>
+    <div class="kpi"><div class="v">0 issues</div><div class="l">TFLint</div></div>
+    <div class="kpi"><div class="v">10</div><div class="l">Diagramas renderizados</div></div>
+  </div>
+  <h4>Las cuatro soluciones</h4>
+  <ul>
+    <li><b>Tarea 1 (diseño):</b> detección híbrida de capacidad máxima de ECS (EventBridge Scheduler + eventos de
+      servicio ECS + Lambda detector), ciclo de vida de alerta en DynamoDB y eventos JSON a CloudWatch Logs.</li>
+    <li><b>Tarea 2 (diseño):</b> plataforma FinOps batch que estima el coste por categoría de transacción combinando
+      telemetría de uso (OpenTelemetry) con facturación <code>AWS Data Exports CUR 2.0</code> vía Athena.</li>
+    <li><b>Tarea 3 (implementado):</b> módulos Terraform para KMS, S3, Aurora PostgreSQL y Secrets Manager, con
+      bootstrap de estado remoto y entornos dev/prod; validado estáticamente.</li>
+    <li><b>Tarea 4 (runbook):</b> respuesta a incidente <code>payments-processor</code> basada en evidencia, con
+      mitigación condicional e integridad de transacciones financieras.</li>
+  </ul>
+  <h4>Decisiones, seguridad y coste</h4>
+  <p>Se priorizan <b>capacidades nativas de AWS</b> (credenciales gestionadas por RDS, S3 Bucket Keys, bloqueo de
+  estado nativo de S3, Database Insights). La seguridad aplica <b>mínimo privilegio, defensa en profundidad, cifrado
+  en reposo y tránsito, red privada y separación de funciones</b>. La eficiencia de coste se logra con Bucket Keys,
+  lifecycle de S3, monitorización <code>standard</code> de Database Insights, dimensionado dev&lt;prod y estimaciones
+  por fórmula (sin inventar precios de AWS).</p>
+  <div class="callout"><b>Implementación vs. diseño.</b> Sólo la Tarea 3 es código desplegable (validado de forma
+  estática, sin <code>apply</code>). Las Tareas 1, 2 y 4 son diseños/runbooks. <b>No se desplegó ni modificó ningún
+  recurso AWS</b>, no se ejecutó <code>terraform plan/apply</code> real y no se solicitaron credenciales.</p>
+</section>
+
+<!-- ===================== 2. CONTEXTO ===================== -->
+<section class="page" id="contexto">
+  <h2>2. Contexto de negocio y supuestos</h2>
+  <p>La plataforma es de <b>alto volumen</b> y los flujos monetarios son críticos: la latencia y la integridad de las
+  transacciones impactan directamente a clientes y a obligaciones de negocio. Supuestos explícitos de la entrega:</p>
+  <table>
+    <tr><th>Supuesto</th><th>Tratamiento</th></tr>
+    <tr><td>Región <code>us-east-1</code></td><td>Ejemplo configurable; no es la región real de Deuna!</td></tr>
+    <tr><td>Account IDs, VPC, subredes, ARNs, SGs</td><td>Placeholders; no se usan identificadores reales</td></tr>
+    <tr><td>Cifras de coste (Tarea 2)</td><td>Sintéticas; no son costes ni precios reales de AWS</td></tr>
+    <tr><td>SLO de latencia / retención de backups</td><td>Supuestos operativos propuestos, no requisitos verificados</td></tr>
+    <tr><td>Instrumentación de aplicación (éxito de pagos, trazas)</td><td>Recomendada; su existencia no se confirma</td></tr>
+    <tr><td>Causa raíz del incidente (Tarea 4)</td><td>No asumida; se determina por evidencia</td></tr>
+  </table>
+</section>
+
+<!-- ===================== 3. PRINCIPIOS ===================== -->
+<section class="page" id="principios">
+  <h2>3. Arquitectura y principios de seguridad</h2>
+  <p>Principios aplicados de forma transversal: <b>mínimo privilegio</b>, <b>defensa en profundidad</b>, <b>cifrado en
+  reposo</b> (KMS CMM) y <b>en tránsito</b> (TLS), <b>acceso de red privado</b>, <b>separación de funciones</b>,
+  <b>aislamiento de entornos</b>, <b>gestión segura de credenciales</b>, <b>trazabilidad</b>, <b>reproducibilidad</b> y
+  <b>protección contra destrucción accidental</b>, siempre con <b>controles conscientes de coste</b>.</p>
+  <p>Servicios como CloudTrail, AWS Config, GuardDuty o Security Hub se <b>documentan como recomendaciones</b> y no se
+  activan para no incurrir en coste no solicitado. Pasar los escáneres estáticos <b>no</b> implica cumplimiento de PCI
+  DSS, ISO 27001, SOC 2 ni regulación financiera.</p>
+</section>
+
+<!-- ===================== 4. TAREA 1 ===================== -->
+<section class="page" id="t1">
+  <h2>4. Tarea 1 — Monitorización de escalado ECS <span class="tag">DIS</span></h2>
+  <p><b>Problema:</b> detectar, alertar y visualizar cuándo un microservicio ECS alcanza su número máximo de tareas y
+  degrada latencia. <b>Hallazgo verificado:</b> AWS <b>no</b> publica un evento dedicado de "capacidad máxima"; alcanzar
+  el máximo es una <i>condición de estado</i> (desired == maxCapacity), no un suceso emitido.</p>
+  <figure>
+    <img src="../diagrams/rendered/ecs-monitoring-architecture.svg" alt="ECS monitoring architecture">
+    <figcaption>Figura 1. Arquitectura de monitorización de escalado ECS (detección híbrida).</figcaption>
+  </figure>
+  <h3>4.1 Algoritmo de detección y estados</h3>
+  <p>Una única <b>Lambda detector</b> inventaría los <i>scalable targets</i> (<code>DescribeScalableTargets</code>),
+  correlaciona estado (<code>DescribeServices</code>, <code>DescribeScalingActivities</code>) y métricas
+  (<code>GetMetricData</code>), y clasifica cada servicio con precedencia
+  <code>PLACEMENT_BLOCKED &gt; SATURATED &gt; AT_CAPACITY_LIMIT &gt; APPROACHING_LIMIT &gt; NORMAL</code> (y
+  <code>UNKNOWN</code> si la telemetría está obsoleta). Distingue <b>alcanzar el límite</b> de la <b>saturación real</b>
+  (CPU/memoria por encima del objetivo en el máximo) y de la <b>imposibilidad de colocar</b> tareas.</p>
+  <table>
+    <tr><th>Estado</th><th>Condición (configurable)</th><th>Severidad</th></tr>
+    <tr><td>APPROACHING_LIMIT</td><td>desired ≥ 80% · max</td><td>warning</td></tr>
+    <tr><td>AT_CAPACITY_LIMIT</td><td>desired ≥ max (operando bien)</td><td>warning</td></tr>
+    <tr><td>SATURATED</td><td>en el máximo y CPU/mem &gt; objetivo o SLI degradado</td><td>critical</td></tr>
+    <tr><td>PLACEMENT_BLOCKED</td><td>running &lt; desired tras <i>grace</i>, con pending/placement failure</td><td>critical</td></tr>
+    <tr><td>UNKNOWN</td><td>config/telemetría ausente u obsoleta</td><td>warning</td></tr>
+  </table>
+  <p>Se preserva la política del escenario (<i>target tracking</i> al 60% CPU/memoria) y se aclara el comportamiento real:
+  el escalado no añade "exactamente 1 tarea" por umbral, respeta cooldowns, y <code>running</code> puede exceder
+  temporalmente <code>desired</code> durante un despliegue.</p>
+  <h3>4.2 Ciclo de vida de alerta y reducción de ruido</h3>
+  <figure>
+    <img src="../diagrams/rendered/ecs-alert-state-machine.svg" alt="ECS alert state machine" style="max-height:150mm;">
+    <figcaption>Figura 2. Máquina de estados de alerta (respaldada por DynamoDB, escrituras condicionales).</figcaption>
+  </figure>
+  <p>Clave de correlación estable <code>accountId#region#clusterName#serviceName#alertCondition</code>. Visibilidad
+  inmediata al alcanzar el máximo; <b>3 observaciones consecutivas</b> antes de paginar por saturación; histéresis de
+  recuperación; supresión de repetición; <b>consciente de despliegues</b> (no suprime saturación real); entrega
+  <i>at-least-once</i> con idempotencia aguas abajo y reconciliación de notificación.</p>
+  <h3>4.3 Alerta estructurada (ejemplo, consistente con Tarea 4)</h3>
+  <pre><code>{ "schemaVersion":"1.0.0", "eventType":"ALERT_STATE_CHANGE", "severity":"critical",
+  "status":"SATURATED", "serviceName":"payments-processor", "environment":"prod",
+  "correlationId":"inc-payments-20261124-0001", "desiredCount":10, "runningCount":10,
+  "maxCapacity":10, "cpuUtilization":82.0, "memoryUtilization":70.0, "scalingTarget":60,
+  "serviceLevelIndicators":{ "p99LatencyMs":4300, "errorRatePct":2.1 },
+  "recommendedAction":"Engage on-call; inspect Aurora and external provider before scaling" }</code></pre>
+  <p class="small muted">Valores sintéticos. El detector <b>observa y alerta; no incrementa</b> automáticamente la
+  capacidad máxima (podría trasladar la saturación a Aurora o al proveedor de pagos).</p>
+  <h3>4.4 Dashboard de guardia (tabla representativa)</h3>
+  <table>
+    <tr><th>Service</th><th>Desired</th><th>Running</th><th>Max</th><th>Cap.</th><th>CPU</th><th>Mem</th><th>p99</th><th>State</th></tr>
+    <tr><td>payments-processor</td><td>10</td><td>10</td><td>10</td><td>100%</td><td>82%</td><td>70%</td><td>4.3s</td><td>SATURATED</td></tr>
+    <tr><td>transfers-service</td><td>8</td><td>8</td><td>10</td><td>80%</td><td>61%</td><td>55%</td><td>1.9s</td><td>APPROACHING</td></tr>
+    <tr><td>balance-service</td><td>4</td><td>4</td><td>12</td><td>33%</td><td>38%</td><td>44%</td><td>0.4s</td><td>NORMAL</td></tr>
+    <tr><td>onboarding-service</td><td>6</td><td>5</td><td>8</td><td>75%</td><td>49%</td><td>52%</td><td>1.1s</td><td>PLACEMENT_BLOCKED</td></tr>
+    <tr><td>notifications-service</td><td>3</td><td>3</td><td>6</td><td>50%</td><td>—</td><td>—</td><td>—</td><td>UNKNOWN</td></tr>
+  </table>
+  <p class="small">Detalle completo: <code>docs/01-ecs-scaling-monitoring.md</code>. Integración con observabilidad
+  externa vía CloudWatch Logs (grupos dedicados, cifrado con la CMK de carga, agnóstico de proveedor).</p>
+</section>
+
+<!-- ===================== 5. TAREA 2 ===================== -->
+<section class="page" id="t2">
+  <h2>5. Tarea 2 — Asignación de coste por transacción <span class="tag">DIS</span></h2>
+  <p>Estima el coste <b>aproximado</b> por categoría combinando <b>telemetría de uso</b> (OpenTelemetry, no muestreada)
+  y <b>facturación</b> <code>AWS Data Exports CUR 2.0</code>, procesadas por Athena. <b>Verificado:</b> CUR 2.0 <b>no</b>
+  da coste por transacción de negocio; el coste por transacción es una estimación por ponderación de consumo.</p>
+  <figure>
+    <img src="../diagrams/rendered/transaction-cost-architecture.svg" alt="Cost allocation architecture">
+    <figcaption>Figura 3. Arquitectura FinOps de asignación de coste (batch S3 + Athena).</figcaption>
+  </figure>
+  <figure>
+    <img src="../diagrams/rendered/transaction-context-propagation.svg" alt="Context propagation">
+    <figcaption>Figura 4. Propagación del contexto de transacción (W3C Trace Context + atributos SQS).</figcaption>
+  </figure>
+  <h3>5.1 Clasificación y drivers de coste</h3>
+  <p>Clasificación canónica en el borde (no cabeceras de usuario). Tags de AWS para dimensiones de infraestructura
+  (<code>Application, Environment, Owner, CostCenter</code>) y <b>telemetría</b> para categoría/tipo/atribución
+  individual. <b>No</b> se crean métricas de alta cardinalidad por <code>transactionId</code>.</p>
+  <table>
+    <tr><th>Servicio</th><th>Dimensión de facturación</th><th>Driver de atribución</th><th>Tipo</th></tr>
+    <tr><td>API Gateway</td><td>requests, transferencia</td><td>requests</td><td>directo/estimado</td></tr>
+    <tr><td>Lambda</td><td>GB-seconds, invocaciones</td><td>GB-seconds</td><td>directo/estimado</td></tr>
+    <tr><td>ECS (Fargate)</td><td>vCPU-h + GB-h (Split Cost Allocation)</td><td>vCPU-s</td><td>estimado/compartido</td></tr>
+    <tr><td>Aurora</td><td>instancia/ACU-h, almacenamiento, I/O</td><td>proxy de consumo (no facturable directo)</td><td>estimado/compartido</td></tr>
+    <tr><td>SQS</td><td>requests (bloques 64 KB)</td><td>requests</td><td>directo/estimado</td></tr>
+    <tr><td>S3</td><td>GB-mes, requests, transferencia</td><td>GB-mes + requests</td><td>estimado/compartido</td></tr>
+  </table>
+  <h3>5.2 Modelo de asignación</h3>
+  <p>Modelo híbrido: coste directo, variable compartido, fijo compartido, <b>capacidad ociosa (visible por separado)</b>
+  y no asignado. Ecuación para transacción <i>i</i>, recurso <i>r</i>, ventana <i>w</i>:</p>
+  <pre><code>allocated_cost(i,r,w) = eligible_cost(r,w) * ( weight(i,r,w) / Σ_j weight(j,r,w) )</code></pre>
+  <p>Conteo canónico: una transacción de negocio = un <code>transactionId</code>; los reintentos (<code>attemptId</code>)
+  suman consumo pero <b>no</b> al denominador. Se distingue coste <b>marginal</b>, <b>asignado</b> y <b>totalmente
+  cargado</b> (reparto explícito de la ociosa por cuota de coste asignado).</p>
+  <h3>5.3 Ejemplo numérico (sintético, 1 día)</h3>
+  <table>
+    <tr><th>Pool</th><th>Total</th><th>Monetario</th><th>No monetario</th><th>Ocioso/No asignado</th></tr>
+    <tr><td>API Gateway</td><td>90.00</td><td>30.00</td><td>60.00</td><td>0.00</td></tr>
+    <tr><td>Lambda</td><td>120.00</td><td>60.00</td><td>60.00</td><td>0.00</td></tr>
+    <tr><td>ECS</td><td>200.00</td><td>90.00</td><td>60.00</td><td>50.00</td></tr>
+    <tr><td>Aurora</td><td>240.00</td><td>100.00</td><td>50.00</td><td>90.00</td></tr>
+    <tr><td>SQS</td><td>20.00</td><td>16.00</td><td>4.00</td><td>0.00</td></tr>
+    <tr><td>S3</td><td>30.00</td><td>12.00</td><td>18.00</td><td>0.00</td></tr>
+    <tr><td>Observabilidad</td><td>40.00</td><td>24.00</td><td>16.00</td><td>0.00</td></tr>
+    <tr><td>Overhead compartido</td><td>60.00</td><td>0.00</td><td>0.00</td><td>60.00</td></tr>
+    <tr style="font-weight:700;"><td>Total</td><td>800.00</td><td>332.00</td><td>268.00</td><td>200.00</td></tr>
+  </table>
+  <div class="kpis">
+    <div class="kpi"><div class="v">USD 0.033200</div><div class="l">Coste/txn monetaria (asignado)</div></div>
+    <div class="kpi"><div class="v">USD 0.006700</div><div class="l">Coste/txn no monetaria (asignado)</div></div>
+    <div class="kpi"><div class="v">USD 0.00</div><div class="l">Diferencia de reconciliación</div></div>
+  </div>
+  <div class="nobreak">
+  <div style="display:flex;gap:14pt;align-items:center;flex-wrap:wrap;">
+    <figure style="flex:1 1 200pt;margin:4pt;">
+      <!-- Donut: 332 / 268 / 200 of 800 -->
+      <svg viewBox="0 0 260 160" width="100%" height="160">
+        <g transform="translate(80,80)">
+          <circle r="60" fill="none" stroke="#e6edf4" stroke-width="22"></circle>
+          <g transform="rotate(-90)">
+            <circle r="60" fill="none" stroke="#1f4e79" stroke-width="22"
+              stroke-dasharray="156.5 220.5" stroke-dashoffset="0"></circle>
+            <circle r="60" fill="none" stroke="#2f8f8a" stroke-width="22"
+              stroke-dasharray="126.3 250.7" stroke-dashoffset="-156.5"></circle>
+            <circle r="60" fill="none" stroke="#c0603a" stroke-width="22"
+              stroke-dasharray="94.25 282.74" stroke-dashoffset="-282.8"></circle>
+          </g>
+          <text text-anchor="middle" y="-2" font-size="13" font-weight="700" fill="#1a2733">USD 800</text>
+          <text text-anchor="middle" y="12" font-size="7.5" fill="#5b6b7a">elegible/día</text>
+        </g>
+        <g font-size="8" fill="#1a2733" transform="translate(155,40)">
+          <rect x="0" y="0" width="10" height="10" fill="#1f4e79"></rect><text x="14" y="9">Monetario 332 (41.5%)</text>
+          <rect x="0" y="18" width="10" height="10" fill="#2f8f8a"></rect><text x="14" y="27">No monetario 268 (33.5%)</text>
+          <rect x="0" y="36" width="10" height="10" fill="#c0603a"></rect><text x="14" y="45">Ocioso/No asig. 200 (25%)</text>
+        </g>
+      </svg>
+      <figcaption>Figura 5. Distribución del coste elegible (sintético).</figcaption>
+    </figure>
+    <figure style="flex:1 1 200pt;margin:4pt;">
+      <!-- Bars: unit cost 0.0332 vs 0.0067 -->
+      <svg viewBox="0 0 260 160" width="100%" height="160">
+        <line x1="40" y1="130" x2="245" y2="130" stroke="#95a3b2"></line>
+        <line x1="40" y1="20" x2="40" y2="130" stroke="#95a3b2"></line>
+        <rect x="80" y="20" width="45" height="110" fill="#1f4e79"></rect>
+        <rect x="165" y="107.8" width="45" height="22.2" fill="#2f8f8a"></rect>
+        <text x="102" y="15" text-anchor="middle" font-size="8" fill="#1a2733">0.033200</text>
+        <text x="187" y="102" text-anchor="middle" font-size="8" fill="#1a2733">0.006700</text>
+        <text x="102" y="142" text-anchor="middle" font-size="7.5" fill="#5b6b7a">Monetaria</text>
+        <text x="187" y="142" text-anchor="middle" font-size="7.5" fill="#5b6b7a">No monetaria</text>
+        <text x="20" y="128" font-size="7" fill="#5b6b7a">0</text>
+      </svg>
+      <figcaption>Figura 6. Coste unitario asignado por categoría (USD/txn, sintético).</figcaption>
+    </figure>
+  </div>
+  </div>
+  <figure>
+    <img src="../diagrams/rendered/cost-allocation-pipeline.svg" alt="Cost allocation pipeline">
+    <figcaption>Figura 7. Pipeline diario de asignación de coste (idempotente, <i>partition overwrite</i>).</figcaption>
+  </figure>
+  <p>Reconciliación: <code>eligible = allocated + idle + unallocated + rounding_residual</code> → 800 = 600 + 200 + 0 + 0.
+  Controles de calidad (cobertura de clasificación, % asignado, diferencia de reconciliación ≤ 1%) y dashboards de
+  Producto/Finanzas/Infraestructura. SQL de referencia en <code>docs/examples/transaction-cost-allocation.sql</code>
+  (<b>no</b> ejecutado contra Athena). <span class="small muted">Las cifras son sintéticas; no son costes ni precios
+  reales de AWS.</span></p>
+</section>
+
+<!-- ===================== 6. TAREA 3 ===================== -->
+<section class="page" id="t3">
+  <h2>6. Tarea 3 — Implementación Terraform <span class="tag">IMPL</span></h2>
+  <p>Única tarea con <b>código desplegable</b>, validada estáticamente (sin <code>apply</code>). Aprovisiona (como
+  código) una CMK de carga, un bucket S3 seguro, un clúster Aurora PostgreSQL y el secreto <code>pgadmin</code>
+  gestionado por RDS; más bootstrap de estado remoto y entornos dev/prod.</p>
+  <figure>
+    <img src="../diagrams/rendered/01-workload-architecture.svg" alt="Workload architecture">
+    <figcaption>Figura 8. Infraestructura de carga de trabajo (VPC/subredes existentes como entrada).</figcaption>
+  </figure>
+  <h3>6.1 Estructura del repositorio y módulos</h3>
+  <table>
+    <tr><th>Módulo</th><th>Responsabilidad</th></tr>
+    <tr><td><code>modules/kms</code></td><td>CMK simétrica, rotación, alias, política de mínimo privilegio</td></tr>
+    <tr><td><code>modules/s3</code></td><td>Bucket SSE-KMS + Bucket Keys, versionado, lifecycle, política de denegación</td></tr>
+    <tr><td><code>modules/aurora</code></td><td>Clúster, subnet group, SG, parámetros (TLS), logs, monitorización</td></tr>
+    <tr><td><code>modules/secrets-manager</code></td><td>Política de recurso del secreto gestionado por RDS</td></tr>
+    <tr><td><code>bootstrap</code> · <code>environments/{dev,prod}</code></td><td>Estado remoto; composición por entorno</td></tr>
+  </table>
+  <h3>6.2 KMS — estrategia de seguridad</h3>
+  <p>Política de clave con 5 sentencias: habilitación IAM del root (anti-lockout), administración (sin cripto), uso
+  (consumidores con <code>kms:ViaService</code> + <code>kms:CallerAccount</code>), <i>grants</i> sólo para recursos AWS
+  (<code>kms:GrantIsForAWSResource</code>) y CloudWatch Logs acotado por contexto de cifrado. En las políticas de clave,
+  <code>Resource:"*"</code> se refiere a <b>la propia clave</b> (no es acceso de principal sin restricción). Protección
+  contra borrado accidental: <code>prevent_destroy = true</code> (sólo protege Terraform) + controles IAM/alarma sobre
+  <code>ScheduleKeyDeletion</code> recomendados en producción.</p>
+  <pre><code># modules/kms/main.tf (extracto) - uso restringido por servicio y cuenta
+condition { test = "StringEquals"  variable = "kms:ViaService"    values = local.via_services }
+condition { test = "StringEquals"  variable = "kms:CallerAccount" values = [local.account_id] }</code></pre>
+  <h3>6.3 S3, Aurora y secreto</h3>
+  <ul class="small">
+    <li><b>S3:</b> SSE-KMS por defecto + Bucket Keys; deny de transporte inseguro/TLS&lt;1.2/cifrado o clave no
+      autorizados; el par <code>StringNotEquals</code>+<code>Null=false</code> permite peticiones sin cabecera (cifrado
+      por defecto) sin crear un bypass; bloqueo público ×4; <code>force_destroy=false</code>; lifecycle.</li>
+    <li><b>Aurora:</b> red privada, SG con ingress 5432 sólo desde SGs aprobados, sin acceso público; cifrado con CMK;
+      TLS forzado (<code>rds.force_ssl</code>); backups + PITR; Enhanced Monitoring con rol dedicado; Database Insights
+      <code>standard</code>; prod: writer+reader, deletion protection, snapshot final.</li>
+    <li><b>Secreto:</b> <code>manage_master_user_password</code> nativo (sin <code>random_password</code>, sin
+      <code>secret_version</code>, sin Lambda); cifrado con la CMK; rotación nativa de RDS; <code>pgadmin</code> sólo
+      administrativo; los microservicios usan identidades de BD dedicadas.</li>
+  </ul>
+  <figure>
+    <img src="../diagrams/rendered/03-security-boundaries.svg" alt="Security boundaries">
+    <figcaption>Figura 9. Fronteras de seguridad y gestión del secreto de base de datos.</figcaption>
+  </figure>
+  <h3>6.4 Estado remoto y entornos</h3>
+  <figure>
+    <img src="../diagrams/rendered/02-remote-state-workflow.svg" alt="Remote state workflow">
+    <figcaption>Figura 10. Estado remoto (bucket + KMS dedicada, bloqueo nativo) y flujo de validación.</figcaption>
+  </figure>
+  <table>
+    <tr><th>Parámetro</th><th>Dev</th><th>Prod</th></tr>
+    <tr><td>Instancias Aurora</td><td>1</td><td>2 (writer+reader)</td></tr>
+    <tr><td>Clase</td><td>db.t4g.medium</td><td>db.r6g.large</td></tr>
+    <tr><td>Backups / Logs</td><td>7 / 30 días</td><td>14 / 90 días</td></tr>
+    <tr><td>Enhanced Monitoring</td><td>60 s</td><td>15 s</td></tr>
+    <tr><td>Deletion protection / snapshot final</td><td>off / omitido</td><td>on / requerido</td></tr>
+  </table>
+  <p class="small">Estado remoto con <code>use_lockfile = true</code> (bloqueo nativo S3; sin DynamoDB). El aislamiento
+  de entornos por claves de estado distintas <b>no</b> es una frontera de seguridad completa por sí sola: requiere
+  políticas IAM acotadas por prefijo (<code>env/dev/*</code> vs <code>env/prod/*</code>). Reproducibilidad vía Docker
+  multi-arch (ARM64 probado; AMD64 soportado por diseño) y CI de validación. No se verifica que la versión de motor o
+  la clase de instancia de ejemplo sean desplegables en una cuenta real.</p>
+</section>
+
+<!-- ===================== 7. TAREA 4 ===================== -->
+<section class="page" id="t4">
+  <h2>7. Tarea 4 — Gestión de incidente de producción <span class="tag">DIS</span></h2>
+  <p><b>Escenario (hechos conocidos):</b> 02:47, <code>payments-processor</code> en 10/10 tareas, p99 &gt; 4 s. La causa
+  raíz <b>no se asume</b>: puede ser cómputo ECS, Aurora o un proveedor de pagos externo.</p>
+  <div class="warn"><b>Decisión central:</b> subir el máximo de ECS es una acción <b>condicional</b>, no la acción por
+  defecto. Hacerlo sin verificar <i>headroom</i> aguas abajo puede <b>empeorar</b> una saturación de Aurora (más
+  conexiones y concurrencia) o amplificar reintentos contra un proveedor degradado.</p>
+  <h3>7.1 Timeline y diagnóstico ordenado</h3>
+  <p>Ventanas objetivo (propuestas, no reales): T+0–5 ack e impacto; T+5–15 diagnóstico; T+15–30 mitigación y
+  verificación; T+30 estabilización. El diagnóstico empieza por <b>impacto de cliente/negocio</b> antes de tocar
+  infraestructura: negocio → ECS → red (ALB condicional) → Aurora → dependencia externa → cambios recientes.</p>
+  <figure>
+    <img src="../diagrams/rendered/incident-diagnosis-decision-tree.svg" alt="Incident decision tree">
+    <figcaption>Figura 11. Árbol de decisión de diagnóstico (subir el máximo de ECS es condicional).</figcaption>
+  </figure>
+  <h3>7.2 Matriz de causa raíz (resumen)</h3>
+  <table>
+    <tr><th>Hipótesis</th><th>Evidencia clave</th><th>Mitigación segura</th></tr>
+    <tr><td>Saturación de cómputo ECS</td><td>CPU/mem &gt; objetivo en el máximo</td><td>Subir max incremental si hay headroom</td></tr>
+    <tr><td>CPU/locks/conexiones Aurora</td><td>DBLoad/locks/connections</td><td>Reducir concurrencia; no añadir tareas ECS</td></tr>
+    <tr><td>Proveedor externo degradado</td><td>span externo domina el p99</td><td>Backoff+jitter, circuit breaker</td></tr>
+    <tr><td>Amplificación de reintentos</td><td>intentos ≫ transacciones</td><td>Presupuesto de reintentos</td></tr>
+    <tr><td>Regresión por despliegue</td><td>correlación temporal con release</td><td>Rollback si no hay migración irreversible</td></tr>
+  </table>
+  <h3>7.3 Mitigación e integridad financiera</h3>
+  <pre><code># Ejemplo sintético: subir el TECHO (max) 10->15, preservando min y políticas.
+aws application-autoscaling register-scalable-target \
+  --service-namespace ecs --resource-id "service/$CLUSTER/payments-processor" \
+  --scalable-dimension ecs:service:DesiredCount --min-capacity 2 --max-capacity 15</code></pre>
+  <p>Se distingue <b>max</b> (techo) de <b>desired</b> (lo fija Auto Scaling). Integridad financiera: identificadores
+  estables + idempotencia; timeouts externos ambiguos como <code>PENDING/UNKNOWN</code> (nunca <code>FAILED</code>
+  automático); reconciliación antes de reintentar. <b>La recuperación de infraestructura no basta</b> si quedan
+  transacciones inconsistentes.</p>
+  <figure>
+    <img src="../diagrams/rendered/incident-response-lifecycle.svg" alt="Incident lifecycle">
+    <figcaption>Figura 12. Ciclo de vida de respuesta a incidentes (incluye reconciliación de transacciones).</figcaption>
+  </figure>
+  <h3>7.4 Comunicación, recuperación y postmortem</h3>
+  <p>Plantillas para equipo técnico, producto y C-Level con cadencia por severidad, sin inventar cifras ni ETA.
+  Criterios de recuperación explícitos (p99 en SLO, éxito de pagos en baseline, tareas convergidas, Aurora estable,
+  transacciones reconciliadas). Postmortem <b>sin culpables</b> con causa raíz <b>explícitamente pendiente</b> y
+  acciones correctivas mapeadas a hipótesis. Detalle en <code>docs/04-production-incident.md</code>.</p>
+</section>
+
+<!-- ===================== 8. SEGURIDAD ===================== -->
+<section class="page" id="seguridad">
+  <h2>8. Consideraciones transversales de seguridad</h2>
+  <ul>
+    <li><b>Cifrado:</b> CMK de carga para S3, almacenamiento Aurora, secreto gestionado y CloudWatch Logs; TLS forzado.</li>
+    <li><b>Mínimo privilegio:</b> roles de solo-lectura para el detector (Tarea 1), rol dedicado de Enhanced Monitoring,
+      separación admin/uso en KMS, separación Finanzas/Ingeniería en FinOps (Tarea 2).</li>
+    <li><b>Datos sensibles:</b> ni la monitorización ni la telemetría de coste contienen PAN, saldos, importes, PII ni
+      secretos. El valor del secreto nunca se lee ni expone.</li>
+    <li><b>Secrets Manager (riesgo residual documentado):</b> una política de recurso <i>Allow-only</i> no excluye a
+      otros principales IAM de la misma cuenta; la restricción efectiva depende de la gobernanza IAM por identidad y de
+      la política KMS. No se añade un <i>deny</i> que pueda romper la rotación nativa.</li>
+  </ul>
+  <p>Recomendaciones condicionadas (no activadas por coste/alcance): CloudTrail (incl. S3 data events), AWS Config,
+  GuardDuty, Security Hub, logging de seguridad centralizado.</p>
+</section>
+
+<!-- ===================== 9. COSTE ===================== -->
+<section class="page" id="coste">
+  <h2>9. Decisiones de eficiencia de coste</h2>
+  <ul>
+    <li><b>S3 Bucket Keys</b> reducen las llamadas (y coste) de KMS en SSE-KMS; lifecycle con transiciones y limpieza de
+      multipart.</li>
+    <li><b>Database Insights <code>standard</code></b> (retención PI gratuita de 7 días) frente a <code>advanced</code>
+      (465 días, mayor coste), con un bloque <code>check</code> que valida la coherencia si se elige advanced.</li>
+    <li><b>Dev &lt; Prod</b>: instancias/retención/monitorización menores en dev; clases de instancia configurables
+      (Graviton).</li>
+    <li><b>Sin servicios de pago añadidos</b> sólo para satisfacer escáneres (CRR, AWS Backup, buckets de access
+      logging).</li>
+    <li><b>Monitorización ligera</b> (Tarea 1: snapshots sólo ante cambios materiales) y <b>telemetría compacta</b>
+      no muestreada para contabilidad de uso (Tarea 2), con estimaciones por <b>fórmula</b> (sin inventar precios).</li>
+  </ul>
+</section>
+
+<!-- ===================== 10. VALIDACION ===================== -->
+<section class="page" id="validacion">
+  <h2>10. Validación y reproducibilidad</h2>
+  <p>Toda la validación es <b>estática</b> y se ejecuta en el contenedor de tooling. <b>No</b> es prueba de un
+  despliegue exitoso en AWS.</p>
+  <table>
+    <tr><th>Validación</th><th>Resultado real</th><th>Ejecución</th></tr>
+    <tr><td>Docker build (ARM64 nativo)</td><td>PASS</td><td>Fase 1 (heredado)</td></tr>
+    <tr><td>terraform fmt -check</td><td>PASS</td><td>Fase 4 (re-ejecutado)</td></tr>
+    <tr><td>terraform validate (bootstrap/dev/prod)</td><td>PASS ×3</td><td>Fase 4</td></tr>
+    <tr><td>TFLint (+ ruleset AWS)</td><td>0 issues</td><td>Fase 4</td></tr>
+    <tr><td>Checkov 3.4.6</td><td>138 passed · 0 failed · 24 skipped (documentados)</td><td>Fase 4</td></tr>
+  </table>
+  <div class="callout small">
+    <b>Distinción explícita:</b> ejecutado en este trabajo = fmt, init(<code>-backend=false</code>), validate, TFLint,
+    Checkov. <b>No ejecutado:</b> <code>terraform apply</code>, <code>terraform plan</code> real contra AWS, SQL contra
+    Athena. <b>No</b> se solicitaron credenciales ni se desplegaron recursos. <b>ARM64 probado</b>; <b>AMD64 soportado
+    por diseño</b> (no probado por separado). El comportamiento en producción requiere verificación en una cuenta AWS
+    autorizada.
+  </div>
+  <h4>Reproducir validación y entregables</h4>
+  <pre><code>make setup &amp;&amp; make check                 # validación local (no despliega AWS)
+cd docs/tooling &amp;&amp; PUPPETEER_SKIP_DOWNLOAD=true npm install
+bash docs/tooling/render-diagrams.sh        # renderiza los 10 diagramas (SVG+PNG)
+node docs/tooling/build-pdf.mjs             # genera el PDF consolidado</code></pre>
+</section>
+
+<!-- ===================== 11. TRAZABILIDAD ===================== -->
+<section class="page" id="trazabilidad">
+  <h2>11. Trazabilidad de requisitos</h2>
+  <p>Matriz completa por requisito en <code>docs/evaluation-matrix.md</code>. Resumen de cobertura:</p>
+  <table>
+    <tr><th>Tarea</th><th>Cobertura</th><th>Estado</th></tr>
+    <tr><td>Tarea 1 — ECS scaling monitoring</td><td>Detección, observabilidad, alertas, dedup, dashboard</td><td>DIS</td></tr>
+    <tr><td>Tarea 2 — Coste por transacción</td><td>Clasificación, propagación, atribución, CUR 2.0, pipeline, reporting</td><td>DIS/EJ</td></tr>
+    <tr><td>Tarea 3 — Terraform</td><td>KMS, S3, Aurora, Secrets, estado remoto, validación</td><td>IMPL</td></tr>
+    <tr><td>Tarea 4 — Incidente</td><td>Diagnóstico, causa raíz, mitigación, comunicación, postmortem</td><td>DIS</td></tr>
+  </table>
+  <p class="small">Dimensiones de evaluación (evidencia, sin notas): profundidad técnica, seguridad AWS, calidad
+  Terraform, eficiencia de coste y claridad de entrega → ver <code>docs/evaluation-matrix.md</code>.</p>
+</section>
+
+<!-- ===================== 12. LIMITACIONES ===================== -->
+<section class="page" id="limitaciones">
+  <h2>12. Supuestos y limitaciones</h2>
+  <ul>
+    <li>Sin <code>terraform plan/apply</code> real: versión de motor, ARNs, rotación efectiva del secreto y persistencia
+      de la política de recurso requieren una cuenta AWS autorizada.</li>
+    <li>Cifras de coste sintéticas; el coste por transacción es estimación (CUR 2.0 no da coste por transacción).</li>
+    <li>SQL ilustrativo no ejecutado contra Athena; diagramas renderizados con mermaid-cli (host Chrome, ARM64).</li>
+    <li>Tareas 1/2/4 son diseño/runbook, no sistemas desplegados.</li>
+    <li><code>prevent_destroy</code> protege sólo operaciones de Terraform (no la API directa).</li>
+    <li>AMD64 soportado por diseño, no probado por separado.</li>
+  </ul>
+</section>
+
+<!-- ===================== 13. PRODUCCION ===================== -->
+<section class="page" id="produccion">
+  <h2>13. Recomendaciones para producción</h2>
+  <ul>
+    <li>Claves KMS <b>independientes por servicio</b> (limitar radio de impacto) en lugar de una única CMK de carga.</li>
+    <li>IAM que deniegue <code>kms:ScheduleKeyDeletion</code> salvo roles break-glass; alarma sobre ese evento.</li>
+    <li>Usuarios de BD dedicados por microservicio; <code>pgadmin</code> sólo administrativo.</li>
+    <li>VPC endpoints para KMS/Secrets Manager/Logs para evitar salida a Internet.</li>
+    <li>Pipeline de despliegue con OIDC, aprobación manual de producción y entornos protegidos.</li>
+    <li>CloudTrail (incl. S3 data events), AWS Config, GuardDuty y Security Hub cuando exista mandato y presupuesto.</li>
+    <li>Presupuesto de conexiones de BD y de reintentos; load testing del flujo de pagos; pgAudit acotado.</li>
+  </ul>
+</section>
+
+<!-- ===================== 14. CONCLUSIONES ===================== -->
+<section class="page" id="conclusiones">
+  <h2>14. Conclusiones</h2>
+  <p>La entrega cubre las cuatro tareas con una separación honesta entre <b>implementación</b> (Tarea 3, validada
+  estáticamente) y <b>diseño</b> (Tareas 1, 2 y 4). Las decisiones priorizan capacidades nativas de AWS, seguridad de
+  mínimo privilegio y defensa en profundidad, y eficiencia de coste, manteniendo trazabilidad a los requisitos y
+  transparencia sobre lo que requiere un entorno AWS autorizado para verificarse. No se desplegó infraestructura real.</p>
+</section>
+
+<!-- ===================== 15. REFERENCIAS ===================== -->
+<section class="page" id="referencias">
+  <h2>15. Referencias oficiales</h2>
+  <h4>Terraform / HashiCorp</h4>
+  <ul class="small">
+    <li>S3 backend &amp; native locking (<code>use_lockfile</code>): developer.hashicorp.com/terraform/language/backend/s3</li>
+    <li>AWS Provider (hashicorp/aws): registry.terraform.io/providers/hashicorp/aws/latest/docs</li>
+  </ul>
+  <h4>Seguridad / KMS / Secrets</h4>
+  <ul class="small">
+    <li>KMS key policies: docs.aws.amazon.com/kms/latest/developerguide/key-policies.html</li>
+    <li>RDS + Secrets Manager (managed master user password): docs.aws.amazon.com/AmazonRDS/latest/UserGuide/rds-secrets-manager.html</li>
+  </ul>
+  <h4>ECS / Auto Scaling / CloudWatch (Tareas 1 y 4)</h4>
+  <ul class="small">
+    <li>ECS service action events: docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs_service_events.html</li>
+    <li>Application Auto Scaling (RegisterScalableTarget, DescribeScalingActivities): docs.aws.amazon.com/autoscaling/application/APIReference/</li>
+    <li>CloudWatch GetMetricData · ALB metrics · Aurora Database Insights / Performance Insights</li>
+  </ul>
+  <h4>FinOps / Facturación (Tarea 2)</h4>
+  <ul class="small">
+    <li>AWS Data Exports CUR 2.0 data dictionary: docs.aws.amazon.com/cur/latest/userguide/table-dictionary-cur2-line-item.html</li>
+    <li>ECS split cost allocation data; Amazon Athena; W3C Trace Context</li>
+  </ul>
+  <p class="small muted">No se incluyen registros de conversación ni prompts de desarrollo. No se inventan versiones,
+  precios ni títulos de documentación.</p>
+</section>
+
+</body>
+</html>

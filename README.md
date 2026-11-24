@@ -30,9 +30,27 @@ Terraform y (4) gestión de incidentes.
 | Tarea 3 — IaC Terraform | Implementada (Fase 1) | [docs/03-terraform-architecture.md](docs/03-terraform-architecture.md) |
 | Tarea 4 — Gestión de incidentes | Runbook (Fase 3) | [docs/04-production-incident.md](docs/04-production-incident.md) · [comandos](docs/examples/incident-diagnostics.md) |
 
-Diagramas en [docs/diagrams/](docs/diagrams/); ejemplos (SQL/JSON) en
-[docs/examples/](docs/examples/). Las Tareas 1 y 2 describen **diseños
-propuestos**; no se desplegó infraestructura en la Fase 2.
+Diagramas fuente en [docs/diagrams/](docs/diagrams/) y renderizados en
+[docs/diagrams/rendered/](docs/diagrams/rendered/); ejemplos (SQL/JSON) en
+[docs/examples/](docs/examples/).
+
+### Entrega final (para el evaluador)
+- **PDF consolidado:** [docs/deliverables/Deuna-AWS-Cloud-Engineering-Assessment.pdf](docs/deliverables/Deuna-AWS-Cloud-Engineering-Assessment.pdf)
+  (fuente editable: [docs/deliverables/report.html](docs/deliverables/report.html)).
+- **Validación de seguridad y matriz de excepciones Checkov:** [docs/security-validation.md](docs/security-validation.md).
+- **Trazabilidad de requisitos:** [docs/evaluation-matrix.md](docs/evaluation-matrix.md).
+
+Las Tareas 1, 2 y 4 son **diseños/runbook documentados**; sólo la Tarea 3 es
+código desplegable (validado de forma estática). **No se desplegó infraestructura
+AWS en ninguna fase.**
+
+### Reproducir diagramas y PDF (toolchain opcional de documentación)
+Separado del entorno de validación Terraform; requiere Node.js y un Chrome local:
+```bash
+cd docs/tooling && PUPPETEER_SKIP_DOWNLOAD=true npm install
+bash docs/tooling/render-diagrams.sh     # renderiza los 10 diagramas (SVG + PNG)
+node docs/tooling/build-pdf.mjs          # genera el PDF consolidado
+```
 
 ## Alcance del proyecto
 Se aprovisiona (como código, sin desplegar):

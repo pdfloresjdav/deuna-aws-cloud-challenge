@@ -201,3 +201,59 @@ diagramas Mermaid no renderizados.
 - Tarea 4: runbook completado (Fase 3).
 Las cuatro tareas están cubiertas. Pendiente: fase de entrega final / PDF (no
 iniciada).
+
+## Fase 4 — Revisión final y entrega
+Fecha: 2026-11-24. Estado: completada.
+
+### Hallazgos de revisión y correcciones aplicadas
+- **KMS (borrado accidental):** se añadió `lifecycle { prevent_destroy = true }`
+  a la CMM de carga (literal, dev+prod). Documentado el trade-off de teardown de
+  dev y la limitación (sólo protege Terraform, no la API directa); controles IAM/
+  alarma sobre `ScheduleKeyDeletion` recomendados. (`terraform/modules/kms/main.tf`)
+- **Secrets Manager:** revisado; se **preserva** la política compatible (sólo
+  `Allow` + `block_public_policy`) y se documenta el **riesgo residual**: no es una
+  allowlist exclusiva; la restricción efectiva depende de IAM por identidad + KMS.
+  No se añadió deny (podría romper la rotación nativa; no verificable sin AWS).
+- **S3 / Aurora / estado remoto:** revisados; coherentes con la documentación; sin
+  cambios de código necesarios.
+- **Checkov (24 excepciones):** revisadas y clasificadas en
+  `docs/security-validation.md` (justificadas / riesgo residual); no se añadieron
+  nuevas supresiones ni servicios de pago para "limpiar" el informe.
+
+### Entregables creados
+- `docs/security-validation.md` — herramientas, resultados reales y matriz de
+  excepciones Checkov.
+- `docs/evaluation-matrix.md` — trazabilidad por requisito + dimensiones de
+  evaluación.
+- `docs/diagrams/rendered/` — 10 diagramas renderizados (SVG + PNG).
+- `docs/deliverables/report.html` (fuente editable) y
+  `docs/deliverables/Deuna-AWS-Cloud-Engineering-Assessment.pdf` (PDF consolidado).
+- `docs/tooling/` — toolchain de documentación (mermaid-cli + puppeteer-core),
+  `render-diagrams.sh`, `build-pdf.mjs`, configs; `node_modules/` ignorado.
+- `README.md` actualizado como punto de entrada para el evaluador.
+
+### Validación final (resultados reales)
+- `make check` (tras el cambio KMS): fmt PASS, validate PASS ×3, TFLint 0 issues,
+  **Checkov 138 passed / 0 failed / 24 skipped**, exit 0.
+- Diagramas: 10 fuentes `.mmd` → 10 SVG + 10 PNG renderizados con mermaid-cli
+  (host Chrome, ARM64).
+- PDF: generado (26 páginas, ~0.71 MB); inspección visual por rasterizado
+  (ghostscript): portada, TOC, diagramas y gráficos embebidos, numeración
+  correcta, sin Mermaid crudo, sin texto recortado ni tablas rotas. Corregido un
+  typo ("Terreaform") y regenerado una vez.
+- `git diff --check` limpio.
+
+### Ubicación de entregables
+PDF: `docs/deliverables/Deuna-AWS-Cloud-Engineering-Assessment.pdf`. Fuente:
+`report.html`. Reproducción: `make setup && make check`; luego
+`cd docs/tooling && PUPPETEER_SKIP_DOWNLOAD=true npm install`,
+`bash docs/tooling/render-diagrams.sh`, `node docs/tooling/build-pdf.mjs`.
+
+### Limitaciones de despliegue que permanecen
+Sin `terraform apply`/`plan` real ni credenciales; SQL no ejecutado en Athena;
+rotación/política del secreto, versión de motor y clase de instancia requieren una
+cuenta AWS autorizada; AMD64 soportado por diseño (no probado por separado).
+
+### Estado de finalización
+Assessment listo para entrega. Las cuatro tareas cubiertas; Tarea 3 implementada y
+validada estáticamente; ningún recurso AWS desplegado o modificado.

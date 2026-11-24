@@ -167,6 +167,18 @@ resource "aws_kms_key" "this" {
   policy                   = data.aws_iam_policy_document.key.json
 
   tags = var.tags
+
+  # Protect the workload key from accidental destruction via Terraform. This is
+  # a literal (prevent_destroy cannot be a variable), so it applies to all
+  # environments. Dev teardown requires temporarily removing this block in a
+  # dedicated, reviewed change. NOTE: this only guards Terraform operations - it
+  # does NOT protect against a direct AWS API ScheduleKeyDeletion or removal of
+  # the resource block. Complementary production controls: IAM deny on
+  # kms:ScheduleKeyDeletion for non-break-glass roles, and a CloudWatch alarm on
+  # ScheduleKeyDeletion events (see docs/03-terraform-architecture.md §5).
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_kms_alias" "this" {
