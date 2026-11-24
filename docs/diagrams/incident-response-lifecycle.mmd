@@ -1,0 +1,14 @@
+%% Incident response lifecycle (Task 4).
+flowchart LR
+    DET["Detection\n(max-capacity + p99 alert)"] --> ACK["Acknowledgement\n(02:47, page acked)"]
+    ACK --> TRIAGE["Triage\n(severity, IC, channel)"]
+    TRIAGE --> DIAG["Diagnosis\n(business -> ECS -> net -> Aurora -> external -> changes)"]
+    DIAG --> MIT["Mitigation\n(conditional, evidence-based)"]
+    MIT --> STAB["Stabilization\n(recovery criteria sustained 15-30 min)"]
+    STAB --> RECON["Transaction reconciliation\n(no duplicate debits/credits)"]
+    RECON --> CLOSE["Closure\n(remove temp mitigations, reconcile Terraform drift)"]
+    CLOSE --> PM["Postmortem\n(blameless)"]
+    PM --> CA["Corrective actions\n(mapped to confirmed root cause)"]
+
+    MIT -. not recovering .-> DIAG
+    STAB -. regression .-> MIT

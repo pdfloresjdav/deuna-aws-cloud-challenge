@@ -1,0 +1,42 @@
+%% Incident diagnosis decision tree (Task 4). Raising ECS max is CONDITIONAL.
+flowchart TD
+    ALERT["Alert 02:47\npayments-processor 10/10, p99 > 4s"] --> IMPACT{"Customer/business impact?\n(payment success rate, 5xx, timeouts)"}
+    IMPACT -->|No payment failures| SEV2["Treat as SEV-2\nmonitor, keep diagnosing"]
+    IMPACT -->|Payments failing / SLO breach| SEV1["Escalate toward SEV-1"]
+
+    SEV2 --> ECS
+    SEV1 --> ECS
+    ECS{"ECS evidence\nCPU/mem vs target?\nplacement failures?"}
+    ECS -->|running < desired, placement failure| PLACE["PLACEMENT_BLOCKED\nfix IPs/quota/capacity provider"]
+    ECS -->|CPU/mem high at max| DOWNSTREAM{"Downstream headroom?\nAurora + external OK?"}
+    ECS -->|CPU/mem low at max| EXTERNAL
+
+    DOWNSTREAM -->|Yes, headroom confirmed| RAISE["CONDITIONAL: raise max incrementally\n(e.g. 10 -> 15), preserve min/policies"]
+    DOWNSTREAM -->|No - Aurora saturated| DB
+    DOWNSTREAM -->|No - external degraded| EXTERNAL
+
+    DB{"Aurora: DBLoad/connections/locks?"}
+    DB -->|CPU/DBLoad high| DBCPU["Reduce concurrency\nDO NOT add ECS tasks"]
+    DB -->|locks/blocking| DBLOCK["Resolve blocker (impact-aware)"]
+    DB -->|connections near limit| DBCONN["Connection budget / pool limits"]
+
+    EXTERNAL{"External provider: timeouts?\nlocal vs external span (traces)"}
+    EXTERNAL -->|external span dominates| EXTMIT["Backoff+jitter, circuit breaker\npreserve idempotency, reconcile"]
+    EXTERNAL -->|spans normal| DEPLOY
+
+    DEPLOY{"Recent deploy correlates?"}
+    DEPLOY -->|Yes, rollback safe| ROLLBACK["Rollback to healthy task def"]
+    DEPLOY -->|Irreversible migration| HOLD["Do NOT rollback blindly\nfix-forward"]
+    DEPLOY -->|No| TRAFFIC{"Traffic spike / abuse?"}
+    TRAFFIC -->|Yes| ADMIT["Admission control / WAF\nprotect payment flows"]
+    TRAFFIC -->|No| REASSESS["Reassess telemetry freshness (UNKNOWN)"]
+
+    RAISE --> VERIFY
+    PLACE --> VERIFY
+    DBCPU --> VERIFY
+    DBLOCK --> VERIFY
+    DBCONN --> VERIFY
+    EXTMIT --> VERIFY
+    ROLLBACK --> VERIFY
+    ADMIT --> VERIFY
+    VERIFY["Verify recovery criteria\n(p99 SLO, payment success,\ntxn reconciliation)"]

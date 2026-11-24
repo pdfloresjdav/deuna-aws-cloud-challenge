@@ -13,12 +13,13 @@ The assessment has four tasks:
 1. ECS microservices scaling monitoring — *design completed (Phase 2)* → `docs/01-ecs-scaling-monitoring.md`.
 2. Transaction-level cost allocation — *design completed (Phase 2)* → `docs/02-transaction-cost-allocation.md`.
 3. **Infrastructure as Code with Terraform — implemented (Phase 1)** → `docs/03-terraform-architecture.md`.
-4. Production incident management — *pending*.
+4. Production incident management — *runbook completed (Phase 3)* → `docs/04-production-incident.md`.
 
-**Current phase: Phase 2 completed.** Phase 1 implemented Task 3 + the dev
-environment; Phase 2 delivered the design documentation for Tasks 1 and 2
-(architecture only, no deployed systems). Do not begin Task 4 yet. Tasks 1 and 2
-are design documents — do not claim deployed/implemented systems.
+**Current phase: Phase 3 completed — all four tasks covered.** Phase 1 implemented
+Task 3 + the dev environment; Phase 2 delivered design docs for Tasks 1 and 2;
+Phase 3 delivered the Task 4 incident runbook. Tasks 1, 2 and 4 are design/runbook
+documentation — do not claim deployed/implemented systems. Do not start the final
+delivery or PDF generation phase unless explicitly requested.
 
 ## Repository architecture
 ```

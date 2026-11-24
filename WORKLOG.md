@@ -144,4 +144,60 @@ infraestructura, Docker ni Terraform).
 - Mantener la limitación explícita: no se ejecutó plan ni despliegue real de AWS.
 
 ### Tareas restantes del assessment (al cierre de Fase 2)
-- Tarea 4 (gestión de incidentes): pendiente.
+- Tarea 4 (gestión de incidentes): pendiente → entregada en Fase 3.
+
+## Fase 3 — Tarea 4 (runbook de incidente de producción)
+Fecha: 2026-11-24. Estado: completada (sólo documentación; sin cambios de
+infraestructura, Docker ni Terraform; sin ejecución de comandos contra AWS/BD).
+
+### Entregables
+- `docs/04-production-incident.md`: runbook del incidente `payments-processor`
+  (02:47, 10/10 tareas, p99 > 4 s). Modelo de severidad y activación, timeline
+  T+0..T+30, secuencia diagnóstica ordenada (negocio→ECS→red→Aurora→externo→
+  cambios), matriz de 10 hipótesis de causa raíz, playbooks de mitigación (ECS/
+  Aurora/externo/despliegue/tráfico) sin downtime garantizado, integridad
+  transaccional financiera, comunicación (técnico/producto/C-Level + cadencia),
+  criterios de recuperación/cierre, postmortem sin culpables con acciones
+  mapeadas y métricas (MTTD/MTTA/TTM/TTR/SLO/reconciliación), consistencia con
+  Tareas 1/2/3, trazabilidad y referencias AWS.
+- Diagramas `incident-diagnosis-decision-tree.mmd` (subir max de ECS condicional)
+  e `incident-response-lifecycle.mmd`.
+- `docs/examples/incident-diagnostics.md`: comandos AWS CLI/PostgreSQL
+  representativos, read-only vs ⚠️ modificación (con preconditions/auth/efecto/
+  verificación/rollback), placeholders por entorno, sin credenciales; no es script
+  ejecutable.
+- Actualizados `README.md` y `CLAUDE.md`.
+
+### Decisiones clave (Fase 3)
+- Causa raíz **no** asumida; decisión por evidencia (ECS vs Aurora vs externo).
+- Subir el máximo de ECS es **condicional** (sólo con headroom aguas abajo);
+  ejemplo sintético 10→15, preservando min y políticas; distinción max vs desired.
+- Reconciliación de cambios de emergencia con Terraform tras estabilizar;
+  congelar `terraform apply` durante el incidente.
+- Integridad financiera: timeouts externos ambiguos → PENDING/UNKNOWN, nunca
+  FAILED automático; idempotencia y reconciliación antes de reintentar.
+
+### Verificación (Fase 3)
+- Documentos y diagramas creados; enlaces Markdown relativos verificados.
+- Consistencia con Tareas 1 (estados/correlationId), 2 (intentos vs txn, coste
+  incremental) y 3 (Aurora privada, Database Insights, Secrets Manager, Terraform).
+- Hechos conocidos preservados (02:47, 10/10, p99>4s); causa raíz marcada como
+  pendiente, no confirmada.
+- Nombres de métricas/comandos AWS verificados (ECS, Auto Scaling, ALB, Aurora/PI,
+  CloudTrail, pg_*).
+- `git diff --check` limpio; sin cambios en archivos Terraform/Docker.
+- No se reconstruyó Docker ni se reejecutó validación de Fase 1.
+
+### Ítems de revisión para la entrega final (preservados, sin resolver aún)
+Checkov (24 excepciones), protección de borrado de la CMK, límites efectivos de
+acceso a Secrets Manager, rotación del secreto RDS, ARM64 probado vs AMD64 por
+diseño, sin plan/despliegue real de AWS, SQL ilustrativo no ejecutado en Athena,
+diagramas Mermaid no renderizados.
+
+### Estado del assessment (al cierre de Fase 3)
+- Tarea 1: diseño completado (Fase 2).
+- Tarea 2: diseño completado (Fase 2).
+- Tarea 3: implementada y validada estáticamente (Fase 1).
+- Tarea 4: runbook completado (Fase 3).
+Las cuatro tareas están cubiertas. Pendiente: fase de entrega final / PDF (no
+iniciada).

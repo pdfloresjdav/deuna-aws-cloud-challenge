@@ -19,6 +19,8 @@ Terraform y (4) gestión de incidentes.
   desarrollo/validación.
 - **Fase 2** entrega el **diseño** de la **Tarea 1** y la **Tarea 2** (documentación
   de arquitectura, no aplicaciones desplegadas).
+- **Fase 3** entrega el **runbook** de la **Tarea 4** (respuesta a incidente de
+  producción). Con ello **las cuatro tareas** están cubiertas.
 
 ### Documentación por tarea
 | Tarea | Estado | Documento |
@@ -26,7 +28,7 @@ Terraform y (4) gestión de incidentes.
 | Tarea 1 — Monitorización de escalado ECS | Diseño (Fase 2) | [docs/01-ecs-scaling-monitoring.md](docs/01-ecs-scaling-monitoring.md) |
 | Tarea 2 — Coste por transacción | Diseño (Fase 2) | [docs/02-transaction-cost-allocation.md](docs/02-transaction-cost-allocation.md) |
 | Tarea 3 — IaC Terraform | Implementada (Fase 1) | [docs/03-terraform-architecture.md](docs/03-terraform-architecture.md) |
-| Tarea 4 — Gestión de incidentes | Pendiente | — |
+| Tarea 4 — Gestión de incidentes | Runbook (Fase 3) | [docs/04-production-incident.md](docs/04-production-incident.md) · [comandos](docs/examples/incident-diagnostics.md) |
 
 Diagramas en [docs/diagrams/](docs/diagrams/); ejemplos (SQL/JSON) en
 [docs/examples/](docs/examples/). Las Tareas 1 y 2 describen **diseños
