@@ -1,0 +1,26 @@
+# Copy to terraform.tfvars and replace placeholder identifiers.
+# All IDs below are PLACEHOLDERS, not real Deuna! infrastructure.
+# Do NOT commit the real terraform.tfvars (see .gitignore).
+
+aws_region          = "us-east-1"
+environment         = "prod"
+application          = "deuna"
+data_classification = "restricted"
+
+# S3
+data_bucket_name = "deuna-prod-financial-data-REPLACE-UNIQUE-SUFFIX"
+
+# Existing networking (placeholders)
+vpc_id             = "vpc-0ffffffffffffffff"
+private_subnet_ids = ["subnet-0ffffffffffffffff", "subnet-0eeeeeeeeeeeeeeee"]
+allowed_security_group_ids = ["sg-0appffffffffffffff"]
+
+# Aurora (prod sizing: writer + reader across AZs)
+aurora_instance_class = "db.r6g.large"
+aurora_instance_count = 2
+
+# IAM principals (placeholders)
+kms_key_administrator_arns     = ["arn:aws:iam::444455556666:role/platform-admin"]
+kms_key_consumer_arns          = ["arn:aws:iam::444455556666:role/deuna-prod-app"]
+secret_admin_principal_arns    = ["arn:aws:iam::444455556666:role/platform-admin"]
+secret_consumer_principal_arns = ["arn:aws:iam::444455556666:role/deuna-prod-dba"]

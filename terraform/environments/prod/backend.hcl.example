@@ -1,0 +1,14 @@
+# Copy to backend.hcl and fill with values from the bootstrap outputs, then:
+#   terraform init -backend-config=backend.hcl
+# Do NOT commit backend.hcl (it is git-ignored).
+#
+# Production state is isolated from dev by a distinct state key (object path)
+# in the same bucket; access is further separated via IAM policies scoped to
+# this key prefix (see docs/03-terraform-architecture.md).
+
+bucket       = "deuna-terraform-state-REPLACE-WITH-UNIQUE-SUFFIX"
+key          = "env/prod/terraform.tfstate"
+region       = "us-east-1"
+encrypt      = true
+kms_key_id   = "arn:aws:kms:us-east-1:111122223333:key/REPLACE-WITH-STATE-KEY-ID"
+use_lockfile = true

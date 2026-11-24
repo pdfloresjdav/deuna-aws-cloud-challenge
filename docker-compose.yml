@@ -1,0 +1,28 @@
+# Single development tooling service. Used for short-lived commands via
+# `docker compose run --rm terraform ...` (see the Makefile), not as a
+# permanently running container.
+#
+# No ports, no privileged mode, no background services, no automatic AWS
+# credential mounting. The image builds natively for the host architecture.
+
+services:
+  terraform:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: deuna-aws-challenge-tools:latest
+    working_dir: /workspace
+    # Keep stdin/tty available for `make shell`.
+    stdin_open: true
+    tty: true
+    environment:
+      # Reuse a persistent provider plugin cache (named volume) across runs.
+      TF_PLUGIN_CACHE_DIR: /home/dev/.terraform.d/plugin-cache
+    volumes:
+      # Mount the repository; generated files persist on the host.
+      - .:/workspace
+      # Persistent Terraform provider plugin cache.
+      - tf-plugin-cache:/home/dev/.terraform.d/plugin-cache
+
+volumes:
+  tf-plugin-cache:

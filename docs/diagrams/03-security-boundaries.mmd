@@ -1,0 +1,33 @@
+%% Security boundaries and database secret management.
+flowchart TB
+    subgraph identities["Identities (IAM)"]
+        ADMIN["Key administrators\n(admin actions only)"]
+        APP["Consumers / app roles\n(crypto via services)"]
+        DBA["DBAs / admin clients\n(read secret)"]
+    end
+
+    subgraph keypolicy["KMS key policy (least privilege)"]
+        ROOT["EnableIAMPermissions (root)\nanti-lockout / recovery"]
+        ADMSTMT["KeyAdministration\n(no Encrypt/Decrypt)"]
+        USESTMT["KeyUsage\nViaService + CallerAccount"]
+        GRANTSTMT["AllowServiceGrants\nGrantIsForAWSResource=true"]
+        LOGSTMT["AllowCloudWatchLogs\nEncryptionContext scoped"]
+    end
+
+    subgraph secret["RDS-managed secret"]
+        SM["Secret (pgadmin)\nblock_public_policy=true\nAllow-only resource policy"]
+        ROT["RDS native rotation\n(~7 day schedule)"]
+    end
+
+    ADMIN --> ADMSTMT
+    APP --> USESTMT
+    APP --> GRANTSTMT
+    ADMSTMT --> ROOT
+    USESTMT --> ROOT
+    GRANTSTMT --> ROOT
+    LOGSTMT --> ROOT
+
+    DBA -->|GetSecretValue| SM
+    GRANTSTMT -->|decrypt secret| SM
+    ROT --> SM
+    SM -. app microservices use separate .-> LEAST["Least-privilege DB users\n(NOT pgadmin)"]

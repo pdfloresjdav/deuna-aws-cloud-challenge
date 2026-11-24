@@ -1,0 +1,30 @@
+# The image build does not copy the repository (tools only), so the build
+# context is kept minimal and free of state, caches and secrets.
+
+.git
+.github
+**/.terraform
+**/.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+backend.hcl
+*.tfplan
+*.plan
+
+# Credentials / secrets
+.env
+.env.*
+*.pem
+*.key
+credentials
+.aws/
+
+# Docs and generated artifacts
+docs/
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db

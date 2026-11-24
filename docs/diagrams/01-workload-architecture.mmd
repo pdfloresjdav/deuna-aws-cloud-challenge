@@ -1,0 +1,45 @@
+%% Deuna! workload infrastructure (Task 3). Existing VPC/subnets are inputs.
+flowchart TB
+    subgraph existing["Existing network (inputs, not created)"]
+        VPC["VPC (vpc_id)"]
+        SUB["Private subnets (>= 2 AZs)"]
+        APPSG["Application / admin\nsecurity groups"]
+    end
+
+    subgraph kms["KMS module"]
+        CMK["Workload CMK\n(symmetric, rotation on)"]
+    end
+
+    subgraph s3mod["S3 module"]
+        BUCKET["S3 bucket\nSSE-KMS + Bucket Keys\nversioning + lifecycle\npublic access blocked"]
+    end
+
+    subgraph auroramod["Aurora module"]
+        DBSG["DB security group\ningress 5432 from approved SGs"]
+        SUBGRP["DB subnet group"]
+        WRITER["Writer instance (AZ-a)"]
+        READER["Reader instance (AZ-b)\n(prod)"]
+        CLUSTER["Aurora PostgreSQL cluster\nstorage encrypted (CMK)\nTLS enforced"]
+        LOGS["CloudWatch Logs\n(postgresql, encrypted)"]
+        MONROLE["Enhanced Monitoring role"]
+    end
+
+    subgraph secretsmod["Secrets Manager module"]
+        SECRET["RDS-managed secret\n(pgadmin, KMS-encrypted)\nnative rotation"]
+    end
+
+    CMK -->|encrypt at rest| BUCKET
+    CMK -->|storage + PI| CLUSTER
+    CMK -->|encrypt secret| SECRET
+    CMK -->|encrypt log group| LOGS
+
+    APPSG -->|TCP 5432| DBSG
+    DBSG --> CLUSTER
+    SUBGRP --> CLUSTER
+    SUB --> SUBGRP
+    VPC --> DBSG
+    CLUSTER --> WRITER
+    CLUSTER --> READER
+    CLUSTER -->|manage_master_user_password| SECRET
+    CLUSTER --> LOGS
+    MONROLE -.enhanced monitoring.-> CLUSTER

@@ -1,0 +1,17 @@
+# Checkov configuration.
+# Scans Terraform source only; never provider binaries or init caches.
+# No soft-fail and no blanket skip-check: genuine findings must surface.
+# Narrowly-scoped, documented exceptions are declared inline in the .tf files
+# using `# checkov:skip=<ID>:<rationale>` comments.
+
+directory:
+  - terraform
+
+framework:
+  - terraform
+
+skip-path:
+  - ".*/\\.terraform/.*"
+
+compact: true
+quiet: true

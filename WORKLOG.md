@@ -1,0 +1,96 @@
+# WORKLOG
+
+Registro de implementación. Fechas en formato absoluto.
+
+## Fase 1 — Tarea 3 (IaC con Terraform) + entorno de desarrollo
+Fecha: 2026-11-24. Estado: completada.
+
+### Fases completadas
+1. Entorno Docker de desarrollo/validación (Dockerfile multi-arch, Compose,
+   Makefile).
+2. Solución Terraform completa (módulos kms, s3, aurora, secrets-manager;
+   bootstrap de estado; roots dev y prod).
+3. Documentación (README, CLAUDE.md, arquitectura, diagramas Mermaid).
+4. Pase de validación enfocado (fmt, init -backend=false, validate, TFLint,
+   Checkov).
+5. Corrección de incidencias reales.
+6. Revalidación de los componentes afectados.
+
+### Decisiones principales
+- Imagen Docker única, Debian slim, descargas por arquitectura (amd64/arm64) con
+  verificación de checksum para Terraform y TFLint; usuario no root.
+- Versiones fijadas: Terraform 1.16.7, TFLint 0.66.0 (+ ruleset AWS 0.50.0),
+  Checkov 3.4.6, AWS CLI v2.42.2.
+- Una única CMK de carga de trabajo para S3, Aurora, secreto y logs (requisito
+  explícito); se documentan los trade-offs y la alternativa de claves por
+  servicio.
+- Credenciales maestras nativas (RDS `manage_master_user_password`); sin
+  `random_password`, sin Lambda de rotación, sin `secret_version`.
+- Bloqueo de estado nativo de S3 (`use_lockfile = true`, Terraform ≥ 1.11); sin
+  DynamoDB (deprecado para nuevas implementaciones).
+- Database Insights en modo `standard` (consciente de coste); modo `advanced`
+  documentado y validado con un bloque `check`.
+- CloudWatch Logs del clúster cifrado con la CMK mediante una sentencia de
+  política de clave acotada por contexto de cifrado.
+
+### Archivos/componentes implementados
+- `Dockerfile`, `docker-compose.yml`, `Makefile`, `.dockerignore`, `.gitignore`,
+  `.tflint.hcl`, `.checkov.yaml`.
+- `.github/workflows/terraform-validation.yml`.
+- `terraform/modules/{kms,s3,aurora,secrets-manager}/`.
+- `terraform/bootstrap/`.
+- `terraform/environments/{dev,prod}/` (+ lock files de proveedor).
+- `README.md`, `CLAUDE.md`, `docs/03-terraform-architecture.md`,
+  `docs/diagrams/*.mmd`.
+
+### Comandos de validación ejecutados
+- `docker compose build terraform`
+- `make versions`
+- `make check` (fmt-check, init -backend=false, validate, tflint, checkov)
+- `terraform providers lock` (plataformas linux/darwin, amd64/arm64)
+
+### Resultados reales de validación
+<!-- RESULTS:START -->
+Ejecución de `make check` (contenedor Docker, arm64 nativo) — exit 0:
+
+| Validación | Resultado | Detalle |
+|---|---|---|
+| `terraform fmt -check` | PASS | Sin diferencias de formato |
+| `terraform validate` (bootstrap) | PASS | "The configuration is valid." |
+| `terraform validate` (dev) | PASS | "The configuration is valid." |
+| `terraform validate` (prod) | PASS | "The configuration is valid." |
+| TFLint (terraform + AWS 0.50.0) | PASS | 0 issues (tras corregir 7 avisos: var sin usar + `versions.tf` en 3 módulos) |
+| Checkov 3.4.6 | PASS | 138 passed, 0 failed, 24 skipped (excepciones documentadas inline) |
+
+Versiones instaladas (imagen): Terraform 1.16.7, TFLint 0.66.0, Checkov 3.4.6,
+AWS CLI 2.42.2, jq 1.6, Git 2.39.5.
+
+Correcciones aplicadas tras el primer escaneo:
+- `iam_database_authentication_enabled = true` en el clúster (CKV_AWS_162).
+- `auto_minor_version_upgrade = true` en las instancias (CKV_AWS_226).
+- Lifecycle mínimo (abort multipart) en el bucket de estado (CKV2_AWS_61).
+
+Excepciones Checkov documentadas inline (`# checkov:skip=<ID>:<motivo>`):
+CKV_AWS_109/111/356 (políticas de clave KMS: `*` = la propia clave, root kms:*
+anti-lockout), CKV_AWS_353 (PI a nivel de clúster), CKV_AWS_139 (deletion
+protection por entorno), CKV_AWS_338 (retención de logs configurable),
+CKV_AWS_18 (logging vía CloudTrail), CKV_AWS_144 (CRR = DR opcional),
+CKV2_AWS_62 (sin consumidores de eventos), CKV2_AWS_8 (backups nativos + PITR),
+CKV2_AWS_27 (query logging podría exponer datos sensibles).
+<!-- RESULTS:END -->
+
+### Limitaciones conocidas
+- Sin `terraform plan`/`apply` real contra AWS (sin credenciales ni despliegue).
+- Verificaciones de runtime (versión de motor, ARNs reales, rotación efectiva,
+  persistencia de la política de recurso del secreto) requieren cuenta AWS
+  autorizada.
+- `prevent_destroy` no admite variables; en la CMK de carga se usa ventana de
+  borrado y se recomienda `prevent_destroy` explícito en prod.
+
+### Tareas restantes del assessment
+- Tarea 1 (monitorización de escalado ECS): pendiente.
+- Tarea 2 (asignación de costes por transacción): pendiente.
+- Tarea 4 (gestión de incidentes): pendiente.
+
+### Estado de despliegue AWS
+Ningún recurso de AWS fue desplegado ni modificado.

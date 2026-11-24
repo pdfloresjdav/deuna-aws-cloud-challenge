@@ -1,0 +1,51 @@
+name: terraform-validation
+
+# Validates bootstrap, dev and prod Terraform configurations.
+# No AWS credentials are used and no deployment is performed.
+
+on:
+  pull_request:
+    paths:
+      - "terraform/**"
+      - "Dockerfile"
+      - "docker-compose.yml"
+      - "Makefile"
+      - ".tflint.hcl"
+      - ".checkov.yaml"
+      - ".github/workflows/terraform-validation.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "terraform/**"
+      - "Dockerfile"
+      - "docker-compose.yml"
+      - "Makefile"
+      - ".tflint.hcl"
+      - ".checkov.yaml"
+
+# Minimum required permissions.
+permissions:
+  contents: read
+
+# Avoid redundant runs for the same ref.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      # Reuse the exact same Docker tooling image as local development, so CI
+      # and local validation share one toolchain and pinned versions.
+      - name: Build tooling image
+        run: make setup
+
+      # Single efficient workflow: fmt-check, init (-backend=false), validate,
+      # tflint, checkov - no duplicate validation passes.
+      - name: Validate (fmt, init, validate, tflint, checkov)
+        run: make check

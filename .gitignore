@@ -1,0 +1,43 @@
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+.terraform.tfstate.lock.info
+crash.log
+crash.*.log
+*.tfplan
+*.plan
+
+# Variable files with real values (keep the examples)
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+
+# Backend configuration with account-specific values (keep the examples)
+backend.hcl
+!backend.hcl.example
+
+# Terraform CLI config
+.terraformrc
+terraform.rc
+
+# Provider lock files ARE committed for root configurations (do not ignore):
+# terraform/**/.terraform.lock.hcl
+
+# Credentials / secrets
+.env
+.env.*
+*.pem
+*.key
+credentials
+.aws/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Claude Code harness artifacts
+.claude/

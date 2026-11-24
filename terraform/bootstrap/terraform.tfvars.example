@@ -1,0 +1,20 @@
+# Copy to terraform.tfvars and adjust for an authorized AWS account.
+# Do NOT commit the real terraform.tfvars (see .gitignore).
+
+aws_region        = "us-east-1"
+state_bucket_name = "deuna-terraform-state-REPLACE-WITH-UNIQUE-SUFFIX"
+kms_alias_name    = "deuna-tfstate"
+
+# IAM principals (CI/CD role, platform operators) allowed to use the state key.
+state_admin_arns = [
+  # "arn:aws:iam::111122223333:role/terraform-ci",
+]
+
+tags = {
+  Application        = "deuna-platform"
+  Environment        = "shared"
+  Owner              = "cloud-platform"
+  ManagedBy          = "terraform"
+  CostCenter         = "platform-engineering"
+  DataClassification = "confidential"
+}

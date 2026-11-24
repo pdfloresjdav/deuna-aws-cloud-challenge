@@ -1,0 +1,36 @@
+%% Terraform remote state bootstrap and validation/deployment workflow.
+flowchart LR
+    subgraph bootstrap["bootstrap (local state)"]
+        STATEKEY["State KMS key\n(separate from workload)"]
+        STATEBUCKET["S3 state bucket\nversioning, TLS-only\nprevent_destroy"]
+    end
+
+    subgraph backends["Environment backends (S3)"]
+        DEVKEY["env/dev/terraform.tfstate"]
+        PRODKEY["env/prod/terraform.tfstate"]
+    end
+
+    STATEKEY --> STATEBUCKET
+    STATEBUCKET --> DEVKEY
+    STATEBUCKET --> PRODKEY
+    DEVKEY -. use_lockfile = true .-> LOCK["Native S3 lock file"]
+    PRODKEY -. use_lockfile = true .-> LOCK
+
+    subgraph ci["CI validation (no AWS creds)"]
+        FMT["fmt-check"] --> INIT["init -backend=false"]
+        INIT --> VALIDATE["validate"]
+        VALIDATE --> TFLINT["tflint"]
+        TFLINT --> CHECKOV["checkov"]
+    end
+
+    subgraph deploy["Authorized deploy (future, out of scope)"]
+        OIDC["GitHub OIDC -> AWS\nshort-lived role"]
+        PLAN["terraform plan (review)"]
+        APPROVE["Manual prod approval"]
+        APPLY["terraform apply"]
+    end
+
+    CHECKOV --> OIDC
+    OIDC --> PLAN --> APPROVE --> APPLY
+    APPLY --> DEVKEY
+    APPLY --> PRODKEY
