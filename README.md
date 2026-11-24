@@ -13,8 +13,24 @@ entorno de desarrollo/validación en Docker y la configuración de estado remoto
 ## Visión general del assessment
 El assessment de Deuna! tiene cuatro tareas: (1) monitorización de escalado de
 microservicios ECS, (2) asignación de costes por transacción, (3) IaC con
-Terraform y (4) gestión de incidentes. **Esta fase implementa la Tarea 3** y
-establece el entorno de desarrollo para las fases siguientes.
+Terraform y (4) gestión de incidentes.
+
+- **Fase 1** implementó la **Tarea 3** (IaC con Terraform) y el entorno de
+  desarrollo/validación.
+- **Fase 2** entrega el **diseño** de la **Tarea 1** y la **Tarea 2** (documentación
+  de arquitectura, no aplicaciones desplegadas).
+
+### Documentación por tarea
+| Tarea | Estado | Documento |
+|---|---|---|
+| Tarea 1 — Monitorización de escalado ECS | Diseño (Fase 2) | [docs/01-ecs-scaling-monitoring.md](docs/01-ecs-scaling-monitoring.md) |
+| Tarea 2 — Coste por transacción | Diseño (Fase 2) | [docs/02-transaction-cost-allocation.md](docs/02-transaction-cost-allocation.md) |
+| Tarea 3 — IaC Terraform | Implementada (Fase 1) | [docs/03-terraform-architecture.md](docs/03-terraform-architecture.md) |
+| Tarea 4 — Gestión de incidentes | Pendiente | — |
+
+Diagramas en [docs/diagrams/](docs/diagrams/); ejemplos (SQL/JSON) en
+[docs/examples/](docs/examples/). Las Tareas 1 y 2 describen **diseños
+propuestos**; no se desplegó infraestructura en la Fase 2.
 
 ## Alcance del proyecto
 Se aprovisiona (como código, sin desplegar):

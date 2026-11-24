@@ -1,0 +1,24 @@
+%% ECS scaling alert state machine (Task 1). Precedence:
+%% PLACEMENT_BLOCKED > SATURATED > AT_CAPACITY_LIMIT > APPROACHING_LIMIT > NORMAL.
+stateDiagram-v2
+    [*] --> NORMAL
+    NORMAL --> APPROACHING_LIMIT: desired >= 80% * max
+    APPROACHING_LIMIT --> AT_CAPACITY_LIMIT: desired >= max
+    AT_CAPACITY_LIMIT --> SATURATED: CPU/mem > target or SLI degraded (x3)
+    AT_CAPACITY_LIMIT --> PLACEMENT_BLOCKED: running < desired past grace (pending>0)
+    SATURATED --> AT_CAPACITY_LIMIT: metrics recover (hysteresis)
+    PLACEMENT_BLOCKED --> AT_CAPACITY_LIMIT: tasks placed
+    AT_CAPACITY_LIMIT --> APPROACHING_LIMIT: desired < max
+    APPROACHING_LIMIT --> NORMAL: desired < 80% * max (hysteresis x3)
+    SATURATED --> [*]: recovered
+    NORMAL --> UNKNOWN: telemetry missing/stale
+    UNKNOWN --> NORMAL: telemetry restored
+
+    note right of SATURATED
+        critical: page after
+        3 consecutive breaches
+    end note
+    note right of AT_CAPACITY_LIMIT
+        warning: immediate
+        visibility on first hit
+    end note

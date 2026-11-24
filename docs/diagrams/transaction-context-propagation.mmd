@@ -1,0 +1,18 @@
+%% Transaction context propagation (Task 2). Business txn id + W3C trace context.
+flowchart LR
+    CLIENT["Client"] --> APIGW["API Gateway\n(edge: assign canonical\ntransactionId + category)"]
+    APIGW -->|"traceparent + x-deuna-txn-context"| ECS["ECS microservice"]
+    ECS -->|"HTTP sync propagation"| LAMBDA["Lambda"]
+    ECS -->|"SQS message attributes\n(not body)"| SQS["SQS queue"]
+    SQS -->|"span link, same transactionId"| CONSUMER["Async consumer\n(batch / fan-out)"]
+    LAMBDA --> AURORA["Aurora ops\n(usage proxy)"]
+    CONSUMER --> S3OP["S3 ops"]
+
+    APIGW -. emits .-> USAGE["Usage accounting events\n(transactionId, category, type,\nattemptId, resource usage)"]
+    ECS -. emits .-> USAGE
+    LAMBDA -. emits .-> USAGE
+    CONSUMER -. emits .-> USAGE
+    USAGE --> LAKE["S3 telemetry data lake"]
+
+    note1["Retries: same transactionId,\nnew attemptId -> consumption++,\ncount unchanged"]
+    CONSUMER -.-> note1

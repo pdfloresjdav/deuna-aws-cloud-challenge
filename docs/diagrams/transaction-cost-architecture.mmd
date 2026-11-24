@@ -1,0 +1,32 @@
+%% Transaction cost allocation - proposed FinOps architecture (Task 2).
+flowchart TB
+    subgraph app["Application telemetry (usage accounting)"]
+        OTEL["OpenTelemetry instrumentation\n(unsampled usage events)"]
+        CWL["CloudWatch Logs / Firehose"]
+        TLAKE["S3 telemetry data lake\n(Parquet, partitioned by date/env)"]
+    end
+
+    subgraph bill["Billing data"]
+        BCM["AWS Billing & Cost Management"]
+        DE["AWS Data Exports (CUR 2.0)"]
+        BLAKE["S3 billing data lake"]
+    end
+
+    subgraph proc["Processing (daily batch)"]
+        GLUE["Glue Data Catalog"]
+        ATHENA["Amazon Athena\n(dedup, weights, allocation, reconcile)"]
+        SCHED["EventBridge Scheduler\n(+ Step Functions if justified)"]
+    end
+
+    subgraph present["Presentation"]
+        SUMMARY["daily_cost_summary (S3)"]
+        BI["QuickSight / BI\n(Product, Finance, Infra)"]
+    end
+
+    OTEL --> CWL --> TLAKE
+    BCM --> DE --> BLAKE
+    TLAKE --> GLUE
+    BLAKE --> GLUE
+    GLUE --> ATHENA
+    SCHED --> ATHENA
+    ATHENA --> SUMMARY --> BI

@@ -1,0 +1,20 @@
+%% Daily cost allocation pipeline (Task 2). Idempotent partition overwrite.
+flowchart TB
+    START["EventBridge Scheduler (daily)"] --> COLLECT["1. Collect app usage telemetry"]
+    COLLECT --> DELIVER["2. Deliver telemetry to S3"]
+    DELIVER --> RECV["3. Receive AWS Data Exports (CUR 2.0)"]
+    RECV --> NORM["4. Normalize telemetry + billing\n(single net-amortized basis)"]
+    NORM --> VALIDATE["5. Validate completeness + classification"]
+    VALIDATE --> DEDUP["6. Deduplicate usage events"]
+    DEDUP --> WEIGHTS["7. Compute allocation weights"]
+    WEIGHTS --> POLICY["8. Apply versioned allocation policy"]
+    POLICY --> COST["9. Compute transaction costs"]
+    COST --> RECON["10. Reconcile with billing"]
+    RECON --> PUBLISH["11. Publish daily aggregates\n(partition overwrite by date/env)"]
+    PUBLISH --> REFRESH["12. Refresh Product + Finance dashboards"]
+
+    VALIDATE -. fail .-> NOTIFY["Failure notification"]
+    RECON -. diff > threshold .-> NOTIFY
+    RECON -->|provisional daily| PUBLISH
+    RECON -->|finalized monthly\nafter billing corrections| PUBLISH
+    LATE["Late telemetry /\nbilling corrections"] -.->|reprocess partition| NORM

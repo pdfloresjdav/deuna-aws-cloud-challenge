@@ -10,13 +10,15 @@ observability platform that ingests CloudWatch Logs.
 
 ## Assessment objectives
 The assessment has four tasks:
-1. ECS microservices scaling monitoring — *pending*.
-2. Transaction-level cost allocation — *pending*.
-3. **Infrastructure as Code with Terraform — implemented in this phase.**
+1. ECS microservices scaling monitoring — *design completed (Phase 2)* → `docs/01-ecs-scaling-monitoring.md`.
+2. Transaction-level cost allocation — *design completed (Phase 2)* → `docs/02-transaction-cost-allocation.md`.
+3. **Infrastructure as Code with Terraform — implemented (Phase 1)** → `docs/03-terraform-architecture.md`.
 4. Production incident management — *pending*.
 
-**Current phase: Phase 1** — implement Task 3 and establish the development
-environment for later phases. Do not begin Tasks 1, 2 or 4.
+**Current phase: Phase 2 completed.** Phase 1 implemented Task 3 + the dev
+environment; Phase 2 delivered the design documentation for Tasks 1 and 2
+(architecture only, no deployed systems). Do not begin Task 4 yet. Tasks 1 and 2
+are design documents — do not claim deployed/implemented systems.
 
 ## Repository architecture
 ```

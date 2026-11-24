@@ -1,0 +1,32 @@
+%% ECS scaling monitoring - proposed architecture (Task 1).
+flowchart TB
+    subgraph ecs["Amazon ECS + Application Auto Scaling (existing)"]
+        SVC["Microservices\n(desired/min/max, target tracking 60%)"]
+        AAS["Application Auto Scaling\nscalable targets"]
+    end
+
+    subgraph triggers["Detection triggers"]
+        SCHED["EventBridge Scheduler\n(1 min reconciliation)"]
+        EVENTS["ECS Service Action /\nDeployment State Change events\n(signal to reconcile)"]
+    end
+
+    subgraph detector["Detector"]
+        LAMBDA["AWS Lambda detector\nDescribeScalableTargets / DescribeServices /\nDescribeScalingActivities / GetMetricData"]
+        DDB["DynamoDB\nalert lifecycle state\n(conditional writes)"]
+        DLQ["SQS DLQ"]
+    end
+
+    subgraph obs["Observability"]
+        CWL["CloudWatch Logs\n/deuna/ecs-scaling/{alerts,telemetry}\n(KMS-encrypted)"]
+        EXT["External observability platform\n(dashboards, routing)"]
+    end
+
+    SCHED --> LAMBDA
+    EVENTS --> LAMBDA
+    EVENTS -. on failure .-> DLQ
+    AAS --> LAMBDA
+    SVC --> LAMBDA
+    LAMBDA <--> DDB
+    LAMBDA -->|structured JSON| CWL
+    CWL -->|subscription / ingestion| EXT
+    LAMBDA -. read-only, no scaling writes .- SVC
