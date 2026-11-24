@@ -135,14 +135,20 @@ degradación → hipótesis #8 (no se asume que fue el último despliegue).
   IPs de subred disponibles.
 - **Authorization:** aprobación del Incident Commander; despliegues y
   `terraform apply` **congelados**.
-- **Expected effect:** sube el **techo** (max) 10→15; Auto Scaling puede aumentar
-  `desired`. **No** cambia `desired` directamente. Preserva `min` y políticas.
+- **Expected effect:** sube el **techo** (max) 10→15 (ejemplo ilustrativo); Auto
+  Scaling puede aumentar `desired`. **No** cambia `desired` directamente. Preserva
+  el mínimo verificado y las políticas.
 ```bash
+# Retrieve and verify the existing minimum first (actual value unknown).
+CURRENT_MIN=$(aws application-autoscaling describe-scalable-targets \
+  --service-namespace ecs --resource-ids "service/$CLUSTER/$SERVICE" \
+  --query 'ScalableTargets[0].MinCapacity' --output text --region "$REGION")
+
 aws application-autoscaling register-scalable-target \
   --service-namespace ecs \
   --resource-id "service/$CLUSTER/$SERVICE" \
   --scalable-dimension ecs:service:DesiredCount \
-  --min-capacity 2 --max-capacity 15 --region "$REGION"
+  --min-capacity "$CURRENT_MIN" --max-capacity 15 --region "$REGION"
 ```
 - **Verification:** `describe-scalable-targets` muestra max=15; nuevas tareas
   `HEALTHY`; p99 y éxito de pagos mejoran; Aurora no se degrada.

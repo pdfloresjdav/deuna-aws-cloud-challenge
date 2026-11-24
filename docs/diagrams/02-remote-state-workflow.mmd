@@ -1,5 +1,5 @@
 %% Terraform remote state bootstrap and validation/deployment workflow.
-flowchart LR
+flowchart TB
     subgraph bootstrap["bootstrap (local state)"]
         STATEKEY["State KMS key\n(separate from workload)"]
         STATEBUCKET["S3 state bucket\nversioning, TLS-only\nprevent_destroy"]

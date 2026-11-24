@@ -1,5 +1,5 @@
 %% Incident response lifecycle (Task 4).
-flowchart LR
+flowchart TB
     DET["Detection\n(max-capacity + p99 alert)"] --> ACK["Acknowledgement\n(02:47, page acked)"]
     ACK --> TRIAGE["Triage\n(severity, IC, channel)"]
     TRIAGE --> DIAG["Diagnosis\n(business -> ECS -> net -> Aurora -> external -> changes)"]

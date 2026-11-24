@@ -207,7 +207,7 @@ Fecha: 2026-11-24. Estado: completada.
 
 ### Hallazgos de revisión y correcciones aplicadas
 - **KMS (borrado accidental):** se añadió `lifecycle { prevent_destroy = true }`
-  a la CMM de carga (literal, dev+prod). Documentado el trade-off de teardown de
+  a la CMK de carga (literal, dev+prod). Documentado el trade-off de teardown de
   dev y la limitación (sólo protege Terraform, no la API directa); controles IAM/
   alarma sobre `ScheduleKeyDeletion` recomendados. (`terraform/modules/kms/main.tf`)
 - **Secrets Manager:** revisado; se **preserva** la política compatible (sólo
@@ -257,3 +257,26 @@ cuenta AWS autorizada; AMD64 soportado por diseño (no probado por separado).
 ### Estado de finalización
 Assessment listo para entrega. Las cuatro tareas cubiertas; Tarea 3 implementada y
 validada estáticamente; ningún recurso AWS desplegado o modificado.
+
+### Pulido final del PDF (revisión dirigida)
+- Nombre del candidato: **Pedro Flores** en la portada; sin placeholders restantes.
+- Paginación: eliminados los saltos forzados por sección (flujo natural, headings
+  junto a su contenido, figuras/tablas sin dividir) → **PDF de 22 páginas** (antes 26).
+- TOC con **números de página reales** (2–22) + líneas guía punteadas; entradas
+  clicables.
+- Legibilidad de diagramas: reorientados a vertical (TB) `transaction-context-propagation`,
+  `02-remote-state-workflow` e `incident-response-lifecycle`; el árbol de decisión de
+  incidente se muestra en **página apaisada**. Los 10 diagramas re-renderizados (SVG+PNG).
+- Correcciones técnicas: "KMS CMM" → "KMS CMK"; condición de capacidad máxima
+  consistente (`desiredCount >= maxCapacity`, incl. cambio manual) y aclaración de que
+  alcanzar el máximo ≠ degradación; ejemplo FinOps con volúmenes (10 000 / 40 000) y
+  cálculos unitarios explícitos; desglose del pool USD 200 = 140 ocioso (ECS 50 +
+  Aurora 90) + 60 overhead/no asignado (total 800 y reconciliación 0 preservados);
+  comando de mitigación con `$CURRENT_MIN` verificado (paso de `describe-scalable-targets`
+  previo) en PDF, `docs/04` y `docs/examples`; 3 mensajes de comunicación añadidos al PDF;
+  comandos de reproducción desde la raíz (`npm --prefix docs/tooling`) y requisito de
+  Chrome documentado; referencias oficiales con URLs completas.
+- Validación: PDF regenerado (22 páginas, ~0.72 MB), inspección visual por rasterizado
+  (portada, TOC con números, diagramas, página apaisada, referencias). `git diff --check`
+  limpio. Terraform/Docker **sin cambios**; validación de infraestructura no reejecutada
+  (Terraform intacto): se conservan validate PASS ×3, TFLint 0, Checkov 138/0/24.

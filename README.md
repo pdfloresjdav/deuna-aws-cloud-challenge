@@ -45,9 +45,11 @@ código desplegable (validado de forma estática). **No se desplegó infraestruc
 AWS en ninguna fase.**
 
 ### Reproducir diagramas y PDF (toolchain opcional de documentación)
-Separado del entorno de validación Terraform; requiere Node.js y un Chrome local:
+Separado del entorno de validación Terraform; requiere Node.js y un Chrome/Chromium
+local (se autodetecta; forzar con `PUPPETEER_EXECUTABLE_PATH`). Ejecutar **desde la
+raíz del repositorio** (probado en macOS Apple Silicon con Google Chrome):
 ```bash
-cd docs/tooling && PUPPETEER_SKIP_DOWNLOAD=true npm install
+PUPPETEER_SKIP_DOWNLOAD=true npm --prefix docs/tooling install
 bash docs/tooling/render-diagrams.sh     # renderiza los 10 diagramas (SVG + PNG)
 node docs/tooling/build-pdf.mjs          # genera el PDF consolidado
 ```

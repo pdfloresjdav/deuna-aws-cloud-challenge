@@ -198,21 +198,30 @@ inicio de la degradación (que puede ser anterior a 02:47).
 10. Definir **criterios de rollback**.
 
 ```bash
-# Synthetic example - raise MAX capacity 10 -> 15 (preserves min=2 and policies).
-# This changes the registered scalable target bounds, NOT the desired count;
-# Application Auto Scaling then decides the desired count via the policies.
+# 1) Retrieve and VERIFY the existing scaling config first (min/max + policies).
+#    The actual minimum is unknown; do not hardcode it.
+CURRENT_MIN=$(aws application-autoscaling describe-scalable-targets \
+  --service-namespace ecs \
+  --resource-ids "service/${CLUSTER}/payments-processor" \
+  --query 'ScalableTargets[0].MinCapacity' --output text --region "${REGION}")
+
+# 2) Illustrative conditional mitigation - raise MAX capacity 10 -> 15.
+#    Changes the registered scalable target bounds, NOT the desired count;
+#    Application Auto Scaling then decides desired via the existing policies.
 aws application-autoscaling register-scalable-target \
   --service-namespace ecs \
   --resource-id "service/${CLUSTER}/payments-processor" \
   --scalable-dimension ecs:service:DesiredCount \
-  --min-capacity 2 \
+  --min-capacity "${CURRENT_MIN}" \
   --max-capacity 15 \
   --region "${REGION}"
 ```
 **Max vs desired:** subir `--max-capacity` **sube el techo**; la `DesiredCount` la
 sigue fijando el *target tracking*. No se fija `desired` a mano salvo necesidad
-puntual justificada. Se **preservan** `min-capacity` y las políticas. **No** se
-sube a un número arbitrariamente alto. No ejecutar el comando aquí.
+puntual justificada. Se **reutiliza el mínimo verificado** (`$CURRENT_MIN`, el
+mínimo real es desconocido) y se **preservan** las políticas. El **10→15** es un
+ejemplo condicional ilustrativo. **No** se sube a un número arbitrariamente alto.
+No ejecutar el comando aquí.
 
 **Reconciliación con Terraform:** un cambio de emergencia introduce *drift* frente
 a la Fase 1. Durante el incidente se **congela** `terraform apply` para que una

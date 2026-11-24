@@ -1,5 +1,5 @@
 %% Transaction context propagation (Task 2). Business txn id + W3C trace context.
-flowchart LR
+flowchart TB
     CLIENT["Client"] --> APIGW["API Gateway\n(edge: assign canonical\ntransactionId + category)"]
     APIGW -->|"traceparent + x-deuna-txn-context"| ECS["ECS microservice"]
     ECS -->|"HTTP sync propagation"| LAMBDA["Lambda"]
