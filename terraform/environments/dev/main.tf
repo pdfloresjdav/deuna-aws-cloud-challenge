@@ -39,6 +39,7 @@ module "s3" {
 module "aurora" {
   source = "../../modules/aurora"
 
+  aws_region         = var.aws_region
   cluster_identifier = "${local.name_prefix}-aurora"
   engine_version     = var.aurora_engine_version
   instance_class     = var.aurora_instance_class

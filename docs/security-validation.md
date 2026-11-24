@@ -22,11 +22,12 @@ make check   # fmt-check + init(-backend=false) + validate (bootstrap/dev/prod) 
 | `terraform fmt -check` | PASS |
 | `terraform validate` (bootstrap/dev/prod) | PASS ×3 |
 | TFLint | 0 issues |
-| Checkov | **138 passed · 0 failed · 24 skipped** |
+| Checkov | **135 passed · 0 failed · 30 skipped** |
 
-Los 24 *skipped* son **excepciones documentadas inline** (`# checkov:skip=<ID>:<motivo>`),
-no comprobaciones aprobadas. No se usa *soft-fail* ni supresión general. Durante la
-revisión final no se añadieron nuevas supresiones.
+Los 30 *skipped* son **excepciones documentadas inline** (`# checkov:skip=<ID>:<motivo>`),
+no comprobaciones aprobadas. No se usa *soft-fail* ni supresión general. (Totales
+previos a la revisión de endurecimiento: 138/0/24; el cambio a "política de recurso
+del secreto siempre creada" añadió 6 *skipped* de política de recurso en dev+prod.)
 
 ## 4. Correcciones aplicadas (vs. hallazgos genuinos)
 - **Fase 1** (al primer escaneo): `iam_database_authentication_enabled` (CKV_AWS_162),
@@ -34,6 +35,13 @@ revisión final no se añadieron nuevas supresiones.
   (CKV2_AWS_61) — hallazgos genuinos resueltos con cambios simples.
 - **Fase 4**: `prevent_destroy = true` en la CMK de carga (protección contra borrado
   accidental vía Terraform; ver §6). No altera el conteo Checkov.
+- **Endurecimiento dirigido**: enforcement de cifrado S3 reforzado (deny de `aws:kms`
+  sin key id y de SSE-C; exención de *service principals* en la TLS mínima);
+  descubrimiento y distribución de AZ en Aurora con *preconditions*; `prevent_destroy`
+  en la KMS de estado; *trust policy* de Enhanced Monitoring con `aws:SourceAccount`/
+  `aws:SourceArn`; egress de BD restringido (sin `0.0.0.0/0` por defecto); guardrails
+  de producción; política de recurso del secreto **siempre creada** con ≥ 1 admin
+  (ver `docs/03-terraform-architecture.md §19.b`).
 
 ## 5. Matriz de excepciones (24 *skipped* = 12 IDs sobre recursos de dev/prod/bootstrap)
 
@@ -50,6 +58,9 @@ revisión final no se añadieron nuevas supresiones.
 | CKV_AWS_18 | `s3` bucket, `bootstrap` state bucket | *Server access logging* evita un bucket adicional con auto-log recursivo | Bajo-medio (auditoría de acceso) | **CloudTrail S3 data events** recomendado | Riesgo residual (control alternativo) |
 | CKV_AWS_144 | `s3` bucket, `bootstrap` state bucket | CRR es control de **DR**; se habilita con requisito explícito | Bajo (DR, no confidencialidad) | Versionado + backups; CRR bajo requisito de DR | Riesgo residual (mejora diferida) |
 | CKV2_AWS_62 | `s3` bucket, `bootstrap` state bucket | No hay flujo *event-driven* que consuma el bucket | Ninguno | — | Justificada (sin caso de uso) |
+| CKV_AWS_108 | `secrets-manager` policy doc | **Política de recurso** del secreto: `*` = el propio secreto; principales acotados a admin/consumer autorizados (no es exfiltración de política de identidad) | Bajo | Principales explícitos + KMS + IAM | Justificada (falso positivo de resource policy) |
+| CKV_AWS_109 | `secrets-manager` policy doc | Igual que 108; permisos limitados a principales nombrados | Bajo | — | Justificada |
+| CKV_AWS_356 | `secrets-manager` policy doc | `*` en la política de recurso del secreto refiere al secreto adjunto; no se puede acotar | Bajo | — | Justificada |
 
 **Clasificación de controles:**
 - **Obligatorios (implementados)**: cifrado SSE-KMS/KMS, bloqueo de acceso público,
@@ -77,8 +88,9 @@ salvo a roles *break-glass*, y una alarma de CloudWatch/EventBridge sobre evento
 `ScheduleKeyDeletion`. No se duplican módulos KMS para hacerlo específico por entorno.
 
 ## 7. Revisión del modelo de autorización de Secrets Manager (residual)
-La política de recurso del secreto gestionado por RDS usa sólo sentencias `Allow` +
-`block_public_policy`. **Importante y documentado**: una política *Allow-only*
+La política de recurso del secreto gestionado por RDS se crea **siempre** (se exige
+≥ 1 principal administrativo mediante validación y *precondition*) y usa sólo
+sentencias `Allow` + `block_public_policy`. **Importante y documentado**: una política *Allow-only*
 **no** impide que otros principales IAM de la **misma cuenta** accedan al secreto si
 sus **políticas basadas en identidad** lo permiten; `block_public_policy` sólo evita
 políticas que concedan acceso **público/cross-account anónimo**, **no** es una

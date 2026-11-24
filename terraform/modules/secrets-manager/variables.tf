@@ -10,9 +10,14 @@ variable "secret_arn" {
 }
 
 variable "admin_principal_arns" {
-  description = "IAM principals allowed to administer the secret policy and read the secret (DBAs/operators)."
+  description = "IAM principals allowed to administer the secret policy and read the secret (DBAs/operators). At least one is required."
   type        = list(string)
   default     = []
+
+  validation {
+    condition     = length(var.admin_principal_arns) >= 1
+    error_message = "At least one admin_principal_arns entry is required (the resource policy is always created)."
+  }
 }
 
 variable "consumer_principal_arns" {

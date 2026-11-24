@@ -1,4 +1,9 @@
-# Deuna! AWS Cloud Challenge — Fase 1 (Tarea 3: IaC con Terraform)
+# Deuna! — AWS Cloud Engineering Assessment
+
+Entrega completa del assessment (4 tareas): monitorización de escalado ECS,
+asignación de coste por transacción, Infraestructura como Código con Terraform y
+gestión de incidente de producción. La Tarea 3 es código desplegable validado
+estáticamente; las Tareas 1, 2 y 4 son diseño/runbook documentados.
 
 Implementación de Infraestructura como Código para la plataforma fintech
 **Deuna!**: una clave KMS gestionada por el cliente, un bucket S3 seguro, un

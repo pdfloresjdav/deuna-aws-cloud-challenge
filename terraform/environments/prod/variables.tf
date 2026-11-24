@@ -8,14 +8,24 @@ variable "aws_region" {
 }
 
 variable "environment" {
-  description = "Environment name."
+  description = "Environment name (this root is production)."
   type        = string
   default     = "prod"
 
   validation {
-    condition     = contains(["dev", "prod"], var.environment)
-    error_message = "environment must be 'dev' or 'prod'."
+    condition     = var.environment == "prod"
+    error_message = "This is the production root; environment must be 'prod'."
   }
+}
+
+# Production guardrail override. Leave false for normal operation. Set to true
+# ONLY in a reviewed, explicitly authorized teardown change together with the
+# relaxed destructive settings (s3_force_destroy, aurora_deletion_protection,
+# aurora_skip_final_snapshot). See docs/03-terraform-architecture.md (teardown).
+variable "prod_teardown_authorized" {
+  description = "Explicitly authorize relaxing destructive-protection guardrails for a reviewed teardown."
+  type        = bool
+  default     = false
 }
 
 variable "application" {
@@ -52,15 +62,25 @@ variable "kms_deletion_window_in_days" {
 }
 
 variable "kms_key_administrator_arns" {
-  description = "IAM principals allowed to administer the workload KMS key."
+  description = "IAM principals allowed to administer the workload KMS key. At least one required in prod."
   type        = list(string)
   default     = []
+
+  validation {
+    condition     = length(var.kms_key_administrator_arns) >= 1
+    error_message = "Production requires at least one kms_key_administrator_arns entry."
+  }
 }
 
 variable "kms_key_consumer_arns" {
-  description = "IAM principals allowed to use the workload KMS key cryptographically."
+  description = "IAM principals allowed to use the workload KMS key cryptographically. At least one required in prod."
   type        = list(string)
   default     = []
+
+  validation {
+    condition     = length(var.kms_key_consumer_arns) >= 1
+    error_message = "Production requires at least one kms_key_consumer_arns entry."
+  }
 }
 
 # ---------------------------------------------------------------------------
@@ -72,9 +92,14 @@ variable "data_bucket_name" {
 }
 
 variable "s3_force_destroy" {
-  description = "Allow deletion of a non-empty bucket. Must stay false in prod."
+  description = "Allow deletion of a non-empty bucket. Must stay false in prod (unless an authorized teardown)."
   type        = bool
   default     = false
+
+  validation {
+    condition     = var.prod_teardown_authorized || var.s3_force_destroy == false
+    error_message = "s3_force_destroy must be false in prod unless prod_teardown_authorized = true."
+  }
 }
 
 variable "s3_noncurrent_version_expiration_days" {
@@ -129,8 +154,8 @@ variable "aurora_instance_count" {
   default     = 2
 
   validation {
-    condition     = var.aurora_instance_count >= 2
-    error_message = "Production must run at least 2 instances (writer + reader) for HA."
+    condition     = var.aurora_instance_count == floor(var.aurora_instance_count) && var.aurora_instance_count >= 2 && var.aurora_instance_count <= 15
+    error_message = "Production aurora_instance_count must be an integer between 2 and 15 (writer + reader) for HA."
   }
 }
 
@@ -141,21 +166,36 @@ variable "aurora_backup_retention_period" {
 }
 
 variable "aurora_deletion_protection" {
-  description = "Deletion protection (prod: on)."
+  description = "Deletion protection (prod: on, unless an authorized teardown)."
   type        = bool
   default     = true
+
+  validation {
+    condition     = var.prod_teardown_authorized || var.aurora_deletion_protection == true
+    error_message = "aurora_deletion_protection must be true in prod unless prod_teardown_authorized = true."
+  }
 }
 
 variable "aurora_skip_final_snapshot" {
-  description = "Skip final snapshot on deletion (prod: false - snapshot required)."
+  description = "Skip final snapshot on deletion (prod: false - snapshot required, unless an authorized teardown)."
   type        = bool
   default     = false
+
+  validation {
+    condition     = var.prod_teardown_authorized || var.aurora_skip_final_snapshot == false
+    error_message = "aurora_skip_final_snapshot must be false in prod unless prod_teardown_authorized = true."
+  }
 }
 
 variable "aurora_monitoring_interval" {
-  description = "Enhanced Monitoring interval in seconds (prod: finer)."
+  description = "Enhanced Monitoring interval in seconds (prod: finer). Must stay enabled (> 0)."
   type        = number
   default     = 15
+
+  validation {
+    condition     = var.aurora_monitoring_interval > 0 && contains([1, 5, 10, 15, 30, 60], var.aurora_monitoring_interval)
+    error_message = "Production Enhanced Monitoring must stay enabled: aurora_monitoring_interval must be one of 1,5,10,15,30,60."
+  }
 }
 
 variable "aurora_database_insights_mode" {
@@ -180,9 +220,14 @@ variable "aurora_log_retention_days" {
 # Secrets Manager
 # ---------------------------------------------------------------------------
 variable "secret_admin_principal_arns" {
-  description = "IAM principals allowed to administer and read the pgadmin secret."
+  description = "IAM principals allowed to administer and read the pgadmin secret. At least one required in prod."
   type        = list(string)
   default     = []
+
+  validation {
+    condition     = length(var.secret_admin_principal_arns) >= 1
+    error_message = "Production requires at least one secret_admin_principal_arns entry."
+  }
 }
 
 variable "secret_consumer_principal_arns" {

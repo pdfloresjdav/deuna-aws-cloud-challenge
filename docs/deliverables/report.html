@@ -122,7 +122,7 @@
   CloudWatch Logs. Esta entrega cubre las cuatro tareas del assessment.</p>
   <div class="kpis">
     <div class="kpi"><div class="v">4/4</div><div class="l">Tareas cubiertas</div></div>
-    <div class="kpi"><div class="v">138 / 0 / 24</div><div class="l">Checkov pass/fail/skip</div></div>
+    <div class="kpi"><div class="v">135 / 0 / 30</div><div class="l">Checkov pass/fail/skip</div></div>
     <div class="kpi"><div class="v">0 issues</div><div class="l">TFLint</div></div>
     <div class="kpi"><div class="v">10</div><div class="l">Diagramas renderizados</div></div>
   </div>
@@ -391,9 +391,17 @@ condition { test = "StringEquals"  variable = "kms:CallerAccount" values = [loca
       TLS forzado (<code>rds.force_ssl</code>); backups + PITR; Enhanced Monitoring con rol dedicado; Database Insights
       <code>standard</code>; prod: writer+reader, deletion protection, snapshot final.</li>
     <li><b>Secreto:</b> <code>manage_master_user_password</code> nativo (sin <code>random_password</code>, sin
-      <code>secret_version</code>, sin Lambda); cifrado con la CMK; rotación nativa de RDS; <code>pgadmin</code> sólo
-      administrativo; los microservicios usan identidades de BD dedicadas.</li>
+      <code>secret_version</code>, sin Lambda); cifrado con la CMK; rotación nativa de RDS; política de recurso
+      <b>siempre creada</b> con ≥ 1 admin; <code>pgadmin</code> sólo administrativo; los microservicios usan
+      identidades de BD dedicadas.</li>
   </ul>
+  <div class="callout small"><b>Endurecimiento dirigido:</b> enforcement de cifrado S3 reforzado (deny de
+  <code>aws:kms</code> sin key id y de SSE-C; *service principals* exentos de la TLS mínima); Aurora descubre y
+  distribuye instancias entre ≥ 2 AZ con <i>preconditions</i> bloqueantes y familia de parameter group derivada del
+  motor; <code>prevent_destroy</code> también en la KMS de estado; <i>trust policy</i> de Enhanced Monitoring con
+  <code>aws:SourceAccount</code>/<code>aws:SourceArn</code>; egress de BD sin <code>0.0.0.0/0</code> por defecto;
+  <b>guardrails de producción</b> (deletion protection, snapshot final, instancias ≥ 2, principales no vacíos) con
+  <i>teardown</i> autorizado documentado. Detalle en <code>docs/03-terraform-architecture.md §19.b</code>.</div>
   <figure>
     <img src="../diagrams/rendered/03-security-boundaries.svg" alt="Security boundaries">
     <figcaption>Figura 9. Fronteras de seguridad y gestión del secreto de base de datos.</figcaption>
@@ -534,7 +542,7 @@ aws application-autoscaling register-scalable-target \
     <tr><td>terraform fmt -check</td><td>PASS</td><td>Fase 4 (re-ejecutado)</td></tr>
     <tr><td>terraform validate (bootstrap/dev/prod)</td><td>PASS ×3</td><td>Fase 4</td></tr>
     <tr><td>TFLint (+ ruleset AWS)</td><td>0 issues</td><td>Fase 4</td></tr>
-    <tr><td>Checkov 3.4.6</td><td>138 passed · 0 failed · 24 skipped (documentados)</td><td>Fase 4</td></tr>
+    <tr><td>Checkov 3.4.6</td><td>135 passed · 0 failed · 30 skipped (documentados)</td><td>Endurecimiento</td></tr>
   </table>
   <div class="callout small">
     <b>Distinción explícita:</b> ejecutado en este trabajo = fmt, init(<code>-backend=false</code>), validate, TFLint,

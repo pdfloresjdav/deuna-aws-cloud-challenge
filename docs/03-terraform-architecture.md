@@ -332,6 +332,64 @@ ambos; solo varían capacidad, retención y protecciones.
   protegidos (ver README §despliegue).
 - `prevent_destroy` explícito en recursos críticos de producción.
 
+## 19.b Endurecimiento dirigido y procedimiento de teardown
+
+Revisión de código posterior (hardening) con estas mejoras:
+
+- **S3 — enforcement de cifrado:** matriz de comportamiento explícita
+  (`modules/s3/main.tf`): sin cabecera → permitido (CMK por defecto); `aws:kms` +
+  CMK autorizada → permitido; `aws:kms` **sin key id** → **denegado**
+  (`DenyKmsWithoutKeyId`, evita la clave `aws/s3` gestionada); clave KMS no
+  autorizada → denegado; `AES256`/otro algoritmo → denegado; **SSE-C** → denegado
+  (`DenySSECustomerKeys`). La denegación de TLS mínima exime a los *service
+  principals* de AWS (`BoolIfExists aws:PrincipalIsAWSService=false`); la
+  denegación de transporte inseguro (sin TLS) aplica a todos. Las condiciones usan
+  `s3:PutObject` con `Null`/*IfExists* para no romper *multipart* (UploadPart no
+  lleva cabeceras de cifrado).
+- **Aurora — AZs:** se descubren las AZ y el VPC de las subredes suministradas
+  (`data.aws_subnet`); **preconditions bloqueantes** verifican que todas pertenecen
+  al `vpc_id` y que hay ≥ 2 AZ distintas; las instancias se distribuyen de forma
+  **determinista** (round-robin) entre las AZ. `promotion_tier` fija la
+  **prioridad de failover** (no fija el *writer*; el *writer* puede cambiar tras un
+  failover). La familia del parameter group se **deriva** de `engine_version`.
+- **Database Insights:** el bloque `check` (sólo avisa) se sustituye por una
+  **precondition bloqueante** (advanced requiere PI + retención ≥ 465).
+- **Enhanced Monitoring:** *trust policy* con protección *confused-deputy*
+  (`aws:SourceAccount` + `aws:SourceArn` con patrón de ARN de instancia, sin
+  dependencia circular); el *attachment* de la política precede a las instancias
+  (`depends_on`).
+- **Egress de la BD:** se elimina el egress `0.0.0.0/0` por defecto. Las
+  integraciones gestionadas por AWS (KMS, secreto gestionado y su rotación,
+  Enhanced Monitoring) operan en el **plano de servicio de AWS** y **no** dependen
+  del egress del security group. Se añade `egress_cidr_blocks` (por defecto vacío)
+  para destinos específicos que la carga realmente necesite.
+- **KMS del estado remoto:** `prevent_destroy = true` en `aws_kms_key.state`
+  (perder la clave hace irrecuperable el estado). Sólo protege operaciones de
+  Terraform, no la API directa.
+- **Secreto gestionado:** la política de recurso se crea **siempre** y se exige
+  ≥ 1 principal administrativo (validación + precondition). Se documenta que una
+  política *Allow-only* es **aditiva** (no una *allowlist* exclusiva) y no anula
+  otros permisos IAM por identidad de la misma cuenta; `block_public_policy` sólo
+  rechaza acceso público. Permisos requeridos documentados: identidad de despliegue
+  Terraform (`secretsmanager:PutResourcePolicy`/`GetResourcePolicy`), y lectores
+  legítimos (`GetSecretValue`/`DescribeSecret` + `kms:Decrypt`). Los microservicios
+  **no** reciben la credencial `pgadmin`.
+- **Guardrails de producción:** validaciones en `environments/prod/variables.tf`
+  para `environment == "prod"`, `s3_force_destroy == false`, `aurora_instance_count`
+  entero ≥ 2, `aurora_deletion_protection == true`, `aurora_skip_final_snapshot ==
+  false`, `aurora_monitoring_interval > 0`, y listas de principales (KMS admin/
+  consumer, secret admin) no vacías.
+
+**Procedimiento de teardown autorizado (producción):** los guardrails protegen la
+configuración normal, no crean un callejón sin salida. Para un teardown revisado y
+explícitamente autorizado se establece `prod_teardown_authorized = true` **junto
+con** los ajustes destructivos relajados (`aurora_deletion_protection = false`,
+`aurora_skip_final_snapshot = false` y, si aplica, `s3_force_destroy = true`) en un
+cambio de código revisado (idealmente de dos personas). Las validaciones
+condicionales (cruzadas con `prod_teardown_authorized`) permiten entonces el
+`terraform destroy`; el `prevent_destroy` de la CMK de carga y de la KMS de estado
+requiere además retirar temporalmente ese bloque en el mismo cambio revisado.
+
 ## 20. Trazabilidad de requisitos (Tarea 3)
 
 | Requisito | Implementación |

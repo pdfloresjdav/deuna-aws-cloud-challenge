@@ -8,20 +8,35 @@
 # master credentials managed natively by RDS + Secrets Manager (no plaintext).
 
 data "aws_partition" "current" {}
+data "aws_caller_identity" "current" {}
+
+# Discover the AZ and VPC of each supplied subnet, to distribute instances and
+# validate network placement. No networking infrastructure is created here.
+data "aws_subnet" "selected" {
+  for_each = toset(var.subnet_ids)
+  id       = each.value
+}
 
 locals {
   monitoring_enabled = var.monitoring_interval > 0
   log_group_name     = "/aws/rds/cluster/${var.cluster_identifier}/postgresql"
-}
+  account_id         = data.aws_caller_identity.current.account_id
+  partition          = data.aws_partition.current.partition
 
-# Guard: advanced Database Insights requires Performance Insights with 465d retention.
-check "database_insights_consistency" {
-  assert {
-    condition = var.database_insights_mode != "advanced" || (
-      var.performance_insights_enabled && var.performance_insights_retention_period >= 465
-    )
-    error_message = "Advanced Database Insights requires performance_insights_enabled=true and retention >= 465 days."
-  }
+  # Parameter group family derived from the configured engine major version
+  # (overridable via var.parameter_group_family), so it never drifts from engine_version.
+  engine_major           = split(".", var.engine_version)[0]
+  parameter_group_family = coalesce(var.parameter_group_family, "aurora-postgresql${local.engine_major}")
+
+  # Distinct AZs of the supplied subnets, sorted for deterministic placement.
+  subnet_azs = sort(distinct([for s in data.aws_subnet.selected : s.availability_zone]))
+
+  # Deterministic AZ per instance (round-robin across discovered AZs) so multiple
+  # instances span different zones (production HA across >= 2 AZs).
+  instance_azs = [for i in range(var.instance_count) : local.subnet_azs[i % length(local.subnet_azs)]]
+
+  # DB instance ARN pattern for the Enhanced Monitoring confused-deputy conditions.
+  monitoring_source_arn = "arn:${local.partition}:rds:${var.aws_region}:${local.account_id}:db:${var.cluster_identifier}-*"
 }
 
 resource "aws_db_subnet_group" "this" {
@@ -49,17 +64,22 @@ resource "aws_vpc_security_group_ingress_rule" "postgres" {
   ip_protocol                  = "tcp"
 }
 
-# Egress is required for AWS service calls (KMS, Secrets Manager, monitoring).
-resource "aws_vpc_security_group_egress_rule" "all" {
+# Egress: none is created by default. Aurora's AWS-managed integrations (KMS, the
+# RDS-managed secret and its rotation, Enhanced Monitoring) run on the AWS service
+# plane and do NOT depend on this security group's egress. Add specific CIDRs via
+# egress_cidr_blocks only if the workload itself requires outbound connectivity.
+resource "aws_vpc_security_group_egress_rule" "egress" {
+  for_each = toset(var.egress_cidr_blocks)
+
   security_group_id = aws_security_group.db.id
-  description       = "Allow outbound to AWS service endpoints"
+  description       = "Outbound to ${each.value}"
   ip_protocol       = "-1"
-  cidr_ipv4         = "0.0.0.0/0"
+  cidr_ipv4         = each.value
 }
 
 resource "aws_rds_cluster_parameter_group" "this" {
   name        = "${var.cluster_identifier}-cluster-pg"
-  family      = var.parameter_group_family
+  family      = local.parameter_group_family
   description = "Cluster parameter group enforcing TLS for ${var.cluster_identifier}"
 
   # Enforce encrypted (TLS) connections at the engine level.
@@ -81,6 +101,19 @@ data "aws_iam_policy_document" "monitoring_assume" {
     principals {
       type        = "Service"
       identifiers = ["monitoring.rds.amazonaws.com"]
+    }
+    # Confused-deputy protection: only this account's RDS DB instances of this
+    # cluster may use the role. A wildcard DB ARN avoids a circular dependency
+    # on the instances that reference the role.
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [local.account_id]
+    }
+    condition {
+      test     = "ArnLike"
+      variable = "aws:SourceArn"
+      values   = [local.monitoring_source_arn]
     }
   }
 }
@@ -162,6 +195,24 @@ resource "aws_rds_cluster" "this" {
 
   tags = var.tags
 
+  lifecycle {
+    precondition {
+      condition     = alltrue([for s in data.aws_subnet.selected : s.vpc_id == var.vpc_id])
+      error_message = "All subnet_ids must belong to the configured vpc_id."
+    }
+    precondition {
+      condition     = length(local.subnet_azs) >= 2
+      error_message = "At least two distinct availability zones are required across subnet_ids."
+    }
+    # Blocking equivalent of the former check block (which only warned).
+    precondition {
+      condition = var.database_insights_mode != "advanced" || (
+        var.performance_insights_enabled && var.performance_insights_retention_period >= 465
+      )
+      error_message = "Advanced Database Insights requires performance_insights_enabled=true and performance_insights_retention_period >= 465."
+    }
+  }
+
   depends_on = [aws_cloudwatch_log_group.postgresql]
 }
 
@@ -178,7 +229,13 @@ resource "aws_rds_cluster_instance" "this" {
   db_subnet_group_name = aws_db_subnet_group.this.name
   publicly_accessible  = false
 
-  # Lower promotion_tier = higher failover priority (instance 1 is the preferred writer).
+  # Distribute instances deterministically across the discovered AZs so a
+  # multi-instance cluster spans at least two zones.
+  availability_zone = local.instance_azs[count.index]
+
+  # promotion_tier sets the FAILOVER PRIORITY (a lower tier is promoted first).
+  # It does NOT pin the writer: Aurora has a single writer that CAN CHANGE after a
+  # failover, after which a former reader becomes the writer.
   promotion_tier = count.index
 
   # Apply minor engine upgrades automatically during the maintenance window.
@@ -190,4 +247,7 @@ resource "aws_rds_cluster_instance" "this" {
   apply_immediately = var.apply_immediately
 
   tags = var.tags
+
+  # Ensure the monitoring role policy is attached before instances are created.
+  depends_on = [aws_iam_role_policy_attachment.enhanced_monitoring]
 }

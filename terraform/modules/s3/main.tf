@@ -94,6 +94,16 @@ resource "aws_s3_bucket_lifecycle_configuration" "this" {
   }
 }
 
+# Encryption-enforcement behavior matrix (PutObject):
+#   - No encryption header                      -> ALLOWED (bucket default SSE-KMS / workload CMK)
+#   - aws:kms + authorized CMK ARN              -> ALLOWED
+#   - aws:kms + no key id                       -> DENIED  (DenyKmsWithoutKeyId; would use aws/s3)
+#   - aws:kms + unauthorized key id             -> DENIED  (DenyUnauthorizedKmsKey)
+#   - AES256 / any non-aws:kms algorithm        -> DENIED  (DenyIncorrectEncryptionAlgorithm)
+#   - SSE-C (customer-provided key)             -> DENIED  (DenySSECustomerKeys)
+# Multipart: conditions target s3:PutObject with Null/IfExists semantics, so
+# UploadPart/CompleteMultipartUpload (which carry no encryption headers) are not
+# broken; the algorithm/key are enforced at CreateMultipartUpload/PutObject.
 data "aws_iam_policy_document" "bucket" {
   # Deny any request not using TLS.
   statement {
@@ -112,7 +122,10 @@ data "aws_iam_policy_document" "bucket" {
     }
   }
 
-  # Deny connections below the minimum TLS version.
+  # Deny connections below the minimum TLS version. AWS service principals are
+  # exempted (BoolIfExists aws:PrincipalIsAWSService = false) so native service
+  # integrations are not broken by the minimum-version requirement; the stricter
+  # DenyInsecureTransport (no TLS at all) above still applies to everyone.
   statement {
     sid    = "DenyOutdatedTLS"
     effect = "Deny"
@@ -126,6 +139,11 @@ data "aws_iam_policy_document" "bucket" {
       test     = "NumericLessThan"
       variable = "s3:TlsVersion"
       values   = [var.min_tls_version]
+    }
+    condition {
+      test     = "BoolIfExists"
+      variable = "aws:PrincipalIsAWSService"
+      values   = ["false"]
     }
   }
 
@@ -170,6 +188,48 @@ data "aws_iam_policy_document" "bucket" {
     condition {
       test     = "Null"
       variable = "s3:x-amz-server-side-encryption-aws-kms-key-id"
+      values   = ["false"]
+    }
+  }
+
+  # Reject uploads that request SSE-KMS (aws:kms) WITHOUT a key id. Without a key
+  # id S3 would fall back to the AWS-managed aws/s3 key instead of the workload
+  # CMK, so this is denied to force the explicit/default workload key.
+  statement {
+    sid    = "DenyKmsWithoutKeyId"
+    effect = "Deny"
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+    actions   = ["s3:PutObject"]
+    resources = ["${aws_s3_bucket.this.arn}/*"]
+    condition {
+      test     = "StringEquals"
+      variable = "s3:x-amz-server-side-encryption"
+      values   = ["aws:kms"]
+    }
+    condition {
+      test     = "Null"
+      variable = "s3:x-amz-server-side-encryption-aws-kms-key-id"
+      values   = ["true"]
+    }
+  }
+
+  # Block SSE-C (customer-provided keys): deny when the SSE-C algorithm header is
+  # present, forcing all objects onto the workload CMK (SSE-KMS).
+  statement {
+    sid    = "DenySSECustomerKeys"
+    effect = "Deny"
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+    actions   = ["s3:PutObject"]
+    resources = ["${aws_s3_bucket.this.arn}/*"]
+    condition {
+      test     = "Null"
+      variable = "s3:x-amz-server-side-encryption-customer-algorithm"
       values   = ["false"]
     }
   }

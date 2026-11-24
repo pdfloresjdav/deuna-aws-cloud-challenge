@@ -4,6 +4,6 @@ output "secret_arn" {
 }
 
 output "resource_policy_managed" {
-  description = "Whether a resource policy was applied to the managed secret."
-  value       = local.manage_policy
+  description = "Whether a resource policy is applied to the managed secret (always true; the policy is always created)."
+  value       = true
 }

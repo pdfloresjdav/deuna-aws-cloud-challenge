@@ -280,3 +280,49 @@ validada estáticamente; ningún recurso AWS desplegado o modificado.
   (portada, TOC con números, diagramas, página apaisada, referencias). `git diff --check`
   limpio. Terraform/Docker **sin cambios**; validación de infraestructura no reejecutada
   (Terraform intacto): se conservan validate PASS ×3, TFLint 0, Checkov 138/0/24.
+
+## Revisión de endurecimiento dirigida (Terraform security & availability)
+Fecha: 2026-11-24. Estado: completada. (Revisión del código real; cambia Terraform,
+por lo que se reejecuta una pasada de validación.)
+
+### Hallazgos y correcciones
+1. **S3 enforcement de cifrado** (`modules/s3`): añadidos `DenyKmsWithoutKeyId`
+   (aws:kms sin key id → usaría `aws/s3`) y `DenySSECustomerKeys` (SSE-C); la TLS
+   mínima exime *service principals* (`aws:PrincipalIsAWSService`). Matriz de
+   comportamiento documentada; multipart no se rompe (`PutObject` + Null/IfExists).
+2. **Aurora AZs** (`modules/aurora`): `data.aws_subnet` descubre AZ/VPC;
+   *preconditions* (subredes en VPC, ≥ 2 AZ); distribución determinista de
+   instancias por AZ; comentario de `promotion_tier` corregido (prioridad de
+   failover, el writer puede cambiar).
+3. **KMS de estado** (`bootstrap`): `prevent_destroy = true` en `aws_kms_key.state`.
+4. **Secreto gestionado** (`modules/secrets-manager`): política de recurso **siempre
+   creada**; ≥ 1 admin requerido (validación + precondition); `block_public_policy`;
+   sin deny que rompa la rotación; comentarios corregidos (no es *allowlist*
+   exclusiva); permisos requeridos documentados.
+5. **Guardrails de producción** (`environments/prod`): validaciones para
+   `environment==prod`, `s3_force_destroy==false`, `aurora_instance_count` entero ≥ 2,
+   `aurora_deletion_protection==true`, `aurora_skip_final_snapshot==false`,
+   `aurora_monitoring_interval>0`, y listas de principales no vacías; flag
+   `prod_teardown_authorized` + procedimiento de teardown documentado.
+6. **Enhanced Monitoring trust** (`modules/aurora`): `aws:SourceAccount` +
+   `aws:SourceArn` (patrón de ARN de instancia, sin dependencia circular);
+   `depends_on` del attachment antes de las instancias; egress de BD sin
+   `0.0.0.0/0` por defecto (configurable).
+7. **Consistencia Aurora**: `check` → *precondition* bloqueante (advanced DB
+   Insights); familia de parameter group derivada de `engine_version`;
+   `instance_count` validado como entero en rango.
+8. **KMS policy review**: sin cambios (sin problemas genuinos; se preserva la
+   recuperación anti-lockout y las integraciones RDS/Secrets/CloudWatch Logs).
+
+### Validación (reejecutada, imagen Docker existente)
+`make check` → fmt PASS, validate PASS ×3, TFLint 0 issues,
+**Checkov 135 passed / 0 failed / 30 skipped**, exit 0. Los *skipped* pasaron de 24
+a 30 por los 3 IDs de política de recurso del secreto (CKV_AWS_108/109/356) en
+dev+prod, documentados inline (falso positivo de resource policy: `*` = el secreto
+adjunto; principales acotados). No se reconstruyó Docker. Diagramas no re-renderizados
+(las fuentes `.mmd` no cambiaron). PDF regenerado con los totales actualizados.
+
+### Límites que permanecen
+Sin `terraform plan/apply` real ni credenciales; preconditions de subred/AZ,
+distribución de AZ, condiciones de confianza y guardrails se verifican en runtime en
+una cuenta AWS autorizada. Ningún recurso AWS desplegado o modificado.

@@ -1,5 +1,10 @@
 # Aurora PostgreSQL module input variables.
 
+variable "aws_region" {
+  description = "AWS region, used to build the Enhanced Monitoring confused-deputy SourceArn condition."
+  type        = string
+}
+
 variable "cluster_identifier" {
   description = "Identifier for the Aurora cluster (e.g. deuna-dev-aurora)."
   type        = string
@@ -12,9 +17,15 @@ variable "engine_version" {
 }
 
 variable "parameter_group_family" {
-  description = "Cluster parameter group family matching the engine major version."
+  description = "Optional override for the cluster parameter group family. When null it is derived from engine_version (aurora-postgresql<major>)."
   type        = string
-  default     = "aurora-postgresql16"
+  default     = null
+}
+
+variable "egress_cidr_blocks" {
+  description = "Optional egress CIDR blocks for the DB security group. Empty = no egress rule (AWS-managed integrations do not need it)."
+  type        = list(string)
+  default     = []
 }
 
 variable "instance_class" {
@@ -29,8 +40,8 @@ variable "instance_count" {
   default     = 1
 
   validation {
-    condition     = var.instance_count >= 1 && var.instance_count <= 15
-    error_message = "instance_count must be between 1 and 15."
+    condition     = var.instance_count == floor(var.instance_count) && var.instance_count >= 1 && var.instance_count <= 15
+    error_message = "instance_count must be an integer between 1 and 15."
   }
 }
 

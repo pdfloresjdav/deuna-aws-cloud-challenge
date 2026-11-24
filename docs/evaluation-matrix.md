@@ -43,7 +43,7 @@
 | Secrets Manager política restringida | resource policy + `block_public_policy` | `modules/secrets-manager/main.tf` | `security-validation.md` §7 | IMPL | Allow-only; gobernanza IAM residual |
 | Estructura modular | modules + envs + bootstrap | `terraform/` | árbol | IMPL | — |
 | Estado remoto | bucket + KMS propia, `use_lockfile` | `terraform/bootstrap/`, `backend.hcl.example` | — | IMPL | Aislamiento real requiere IAM |
-| Herramientas de validación de seguridad | TFLint + Checkov + CI | `.tflint.hcl`, `.checkov.yaml`, workflow | 138/0/24 | IMPL | — |
+| Herramientas de validación de seguridad | TFLint + Checkov + CI | `.tflint.hcl`, `.checkov.yaml`, workflow | 135/0/30 | IMPL | — |
 
 ## Tarea 4 — Incidente de producción (runbook)
 | Requisito | Solución | Archivo | Evidencia | Estado | Supuestos/limitaciones |

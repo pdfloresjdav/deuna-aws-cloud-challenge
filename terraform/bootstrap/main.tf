@@ -67,6 +67,15 @@ resource "aws_kms_key" "state" {
   enable_key_rotation     = true
   policy                  = data.aws_iam_policy_document.state_key.json
   tags                    = var.tags
+
+  # Protect the state encryption key: losing it makes the remote state
+  # unrecoverable. prevent_destroy guards only Terraform operations; it does NOT
+  # protect against a direct AWS API ScheduleKeyDeletion or removal of this
+  # resource block. Authorized teardown requires temporarily removing this block
+  # in a reviewed change (see docs/03-terraform-architecture.md §13).
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_kms_alias" "state" {
